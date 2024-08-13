@@ -10,3 +10,5 @@ python manage.py collectstatic --no-input
 
 # Apply any outstanding database migrations
 python manage.py migrate
+
+stripe listen --forward-to inst-store-api.onrender.com/api/v1/store/webhook/
