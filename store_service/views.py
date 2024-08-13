@@ -4,6 +4,8 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
+
+from config.settings import STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 from .models import Basket, Category, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor
 from .serializers import (
     BasketSerializer,
@@ -11,12 +13,11 @@ from .serializers import (
     ItemDetailSerializer,
     ItemSerializer,
     OrderSerializer,
-    BasketListSerializer, BasketItemSerializer,
+    BasketItemSerializer,
 )
 
 from user_service.models import User, DeliveryAddress
 
-from config import settings
 
 from .utils import create_checkout_session
 
@@ -212,8 +213,8 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
 @csrf_exempt
 def stripe_webhook(request):
-    stripe.api_key = settings.STRIPE_SECRET_KEY
-    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+    stripe.api_key = STRIPE_SECRET_KEY
+    endpoint_secret = STRIPE_WEBHOOK_SECRET
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
     try:
