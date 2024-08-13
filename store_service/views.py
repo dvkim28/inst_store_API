@@ -185,13 +185,14 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     def create_order_items(self, basket: Basket, order: Order):
-        for order_item in  basket.basket_items.all():
+        for order_item in basket.basket_items.all():
             item = Item.objects.get(name=order_item.item)
             OrderItem.objects.create(
                 order=order,
                 item=item,
                 price=item.price
             )
+
     def get_basket_for_user(self, user: User) -> Basket:
         basket = Basket.objects.get(user=user)
         return basket
@@ -203,7 +204,7 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return DeliveryAddress.objects.get(user=user)
 
     def create_order(
-        self, user: User, delivery_address: DeliveryAddress
+            self, user: User, delivery_address: DeliveryAddress
     ) -> Order:
         return (Order.objects.
                 create(user=user, delivery_address=delivery_address))
