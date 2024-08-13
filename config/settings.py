@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
-import dj_database_url
 
 from dotenv import load_dotenv
 
@@ -83,13 +82,15 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-db_pass = os.environ["DATABASE_PASSWORD"]
 DATABASES = {
-    'default': dj_database_url.config(
-        default=f'postgresql://store-db_owner:{db_pass}@ep-delicate-bush-a5p0ypeo.us-east-2.aws.neon.tech/store-db?sslmode=require',
-        conn_max_age=600
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ["DATABASE_NAME"],
+        'USER': os.environ["DATABASE_USER"],
+        'PASSWORD': os.environ["DATABASE_PASSWORD"],
+        'HOST': os.environ["DATABASE_HOST"],
+        'PORT': os.environ["DATABASE_PORT"],
+    }
 }
 
 
