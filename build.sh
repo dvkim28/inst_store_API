@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
-# Exit on error
 set -o errexit
 
-# Modify this line as needed for your package manager (pip, poetry, etc.)
+if ! command -v stripe &> /dev/null
+then
+    echo "Stripe CLI не найден, установка..."
+    curl -fsSL https://cli.stripe.com/install.sh | bash
+    export PATH="$PATH:/home/user/.local/bin"
+fi
+
 pip install -r requirements.txt
 
-# Convert static asset files
 python manage.py collectstatic --no-input
 
-# Apply any outstanding database migrations
 python manage.py migrate
 
 stripe listen --forward-to inst-store-api.onrender.com/api/v1/store/webhook/
