@@ -13,5 +13,3 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 
 python manage.py migrate
-
-stripe listen --forward-to inst-store-api.onrender.com/api/v1/store/webhook/
