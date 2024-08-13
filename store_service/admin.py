@@ -23,7 +23,7 @@ class ImageItemAdmin(admin.ModelAdmin):
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
-    extra = 1  # Количество пустых форм для добавления новых записей
+    extra = 1
 
 
 class OrderAdmin(admin.ModelAdmin):

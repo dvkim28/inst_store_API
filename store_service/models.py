@@ -65,13 +65,11 @@ class ItemColor(models.Model):
 
 class Basket(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
-    items = models.ManyToManyField(
-        Item,
-        blank=True,
-        related_name="baskets")
+
 
 class BasketItem(models.Model):
     basket = models.ForeignKey(Basket, on_delete=models.CASCADE, related_name="basket_items")
+    price = models.DecimalField(max_digits=9, decimal_places=2, default=0)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     size = models.ForeignKey(ItemSize, on_delete=models.CASCADE)
     color = models.ForeignKey(ItemColor, on_delete=models.CASCADE)
@@ -88,7 +86,7 @@ class Order(models.Model):
         on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
-    checkout_url = models.URLField(blank=True, null=True)
+    checkout_url = models.TextField(blank=True, null=True)
 
 
 class OrderItem(models.Model):

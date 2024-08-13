@@ -107,15 +107,15 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         return BasketItem.objects.filter(basket__user=user)
 
     def create(self, request, *args, **kwargs):
-        item_id = request.data.get('item')
-        size_id = request.data.get('size')
-        color_id = request.data.get('color')
+        item = request.data["item"]
+        size = request.data.get('size')
+        color = request.data.get('color')
         quantity = request.data.get('quantity', 1)
 
         try:
-            item = Item.objects.get(id=item_id)
-            size = ItemSize.objects.get(id=size_id)
-            color = ItemColor.objects.get(id=color_id)
+            item = Item.objects.get(name=item)
+            size = ItemSize.objects.get(size=size)
+            color = ItemColor.objects.get(color=color)
         except Item.DoesNotExist or ItemSize.DoesNotExist or ItemColor.DoesNotExist:
             return Response({'error': 'Item, size, or color not found'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -163,14 +163,14 @@ class OrderModelViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request):
         user = request.user
         basket = self.get_basket_for_user(user)
-        self.get_delivery_address(user)
+        delivery_address = self.get_delivery_address(user)
         try:
-            order = self.create_order(user, basket)
+            order = self.create_order(user, delivery_address)
             self.create_order_items(basket, order)
-            self.delete_basket(basket)
+            # self.delete_basket(basket)
         except Exception as e:
             return Response({"error": str(e)},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -185,11 +185,11 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     def create_order_items(self, basket: Basket, order: Order):
-        for basket_item in basket.items.all():
+        for order_item in  basket.basket_items.all():
             OrderItem.objects.create(
                 order=order,
-                item=basket_item,
-                price=basket_item.price
+                item=order_item,
+                price=order_item.price
             )
 
     def get_basket_for_user(self, user: User) -> Basket:

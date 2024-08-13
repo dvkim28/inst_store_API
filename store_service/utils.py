@@ -10,6 +10,8 @@ from config import settings
 
 def create_checkout_session(order: Order) -> None:
     stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
+    # print(order.items.all())
+    # print(order)
     try:
         line_items = []
         for item in order.items.all():
@@ -39,6 +41,7 @@ def create_checkout_session(order: Order) -> None:
                 "order_id": order.id,
             },
         )
+        print("Line Items:", line_items)
         add_checkout_to_order(order=order, url=checkout_session.url)
         return checkout_session.url
     except stripe.error.StripeError as e:

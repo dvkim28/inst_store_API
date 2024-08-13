@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -32,7 +31,6 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 DEBUG = os.environ["DEBUG"]
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0", "inst-store-api.onrender.com"]
-
 
 # Application definition
 
@@ -83,7 +81,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database
+
+
 if DEBUG == "FALSE":
     DATABASES = {
         'default': {
@@ -103,14 +102,13 @@ else:
         }
     }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation."
-        "UserAttributeSimilarityValidator",
+                "UserAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation."
