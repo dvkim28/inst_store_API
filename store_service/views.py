@@ -186,12 +186,12 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
     def create_order_items(self, basket: Basket, order: Order):
         for order_item in  basket.basket_items.all():
+            item = Item.objects.get(name=order_item.item)
             OrderItem.objects.create(
                 order=order,
-                item=order_item,
-                price=order_item.price
+                item=item,
+                price=item.price
             )
-
     def get_basket_for_user(self, user: User) -> Basket:
         basket = Basket.objects.get(user=user)
         return basket
