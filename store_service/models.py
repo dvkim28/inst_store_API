@@ -97,3 +97,7 @@ class OrderItem(models.Model):
         related_name="items")
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=9, decimal_places=2)
+    size = models.ForeignKey(ItemSize, on_delete=models.CASCADE, related_name="items_set", null=True, blank=True)
+    color = models.ForeignKey(ItemColor, on_delete=models.CASCADE, related_name="items_set", null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1)
+

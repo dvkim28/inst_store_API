@@ -11,12 +11,13 @@ from .serializers import (
     ItemDetailSerializer,
     ItemSerializer,
     OrderSerializer,
-    BasketListSerializer, BasketItemSerializer,
+    BasketItemSerializer,
 )
 
 from user_service.models import User, DeliveryAddress
 
 from config import settings
+from .tasks import send_telegram_message
 
 from .utils import create_checkout_session
 
@@ -130,7 +131,7 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         )
 
         if not created:
-            basket_item.quantity += quantity
+            basket_item.quantity += int(quantity)
             basket_item.save()
 
         serializer = self.get_serializer(basket_item)
@@ -163,14 +164,14 @@ class OrderModelViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request):
+    def create(self, request, *args):
         user = request.user
         basket = self.get_basket_for_user(user)
         delivery_address = self.get_delivery_address(user)
         try:
             order = self.create_order(user, delivery_address)
             self.create_order_items(basket, order)
-            # self.delete_basket(basket)
+            self.delete_basket(basket)
         except Exception as e:
             return Response({"error": str(e)},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -185,12 +186,14 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     def create_order_items(self, basket: Basket, order: Order):
-        for order_item in  basket.basket_items.all():
-            item = Item.objects.get(name=order_item.item)
+        for order_item in basket.basket_items.all():
             OrderItem.objects.create(
                 order=order,
-                item=item,
-                price=item.price
+                item=order_item.item,
+                price=order_item.price,
+                size=order_item.size,
+                color=order_item.color,
+                quantity=order_item.quantity,
             )
     def get_basket_for_user(self, user: User) -> Basket:
         basket = Basket.objects.get(user=user)
@@ -231,6 +234,7 @@ def stripe_webhook(request):
 def mark_order_complete(event: dict) -> None:
     session = event["data"]["object"]
     order_id = session["metadata"].get("order_id")
+    send_telegram_message.delay(order_id)
     order = Order.objects.get(id=order_id)
     order.is_paid = True
     order.save()

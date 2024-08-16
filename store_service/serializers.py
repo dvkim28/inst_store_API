@@ -68,7 +68,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BasketItem
-        fields = ['id', 'item', 'size', 'color', 'quantity']
+        fields = ['id', 'item', 'size', 'color', 'quantity', "price"]
 
     def validate(self, data):
         basket = self.context['request'].user.basket
