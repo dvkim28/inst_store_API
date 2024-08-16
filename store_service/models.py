@@ -34,6 +34,7 @@ class Item(models.Model):
         max_length=100,
         blank=True,
         null=True)
+    fabric = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField()
     price = DecimalField(max_digits=9, decimal_places=2)
     sale_price = DecimalField(
@@ -80,7 +81,7 @@ class BasketItem(models.Model):
 
 
 class Order(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="orders")
     delivery_address = models.ForeignKey(
         DeliveryAddress,
         on_delete=models.CASCADE)

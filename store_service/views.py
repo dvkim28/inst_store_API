@@ -4,8 +4,6 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
-
-from config.settings import STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 from .models import Basket, Category, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor
 from .serializers import (
     BasketSerializer,
@@ -13,11 +11,12 @@ from .serializers import (
     ItemDetailSerializer,
     ItemSerializer,
     OrderSerializer,
-    BasketItemSerializer,
+    BasketListSerializer, BasketItemSerializer,
 )
 
 from user_service.models import User, DeliveryAddress
 
+from config import settings
 
 from .utils import create_checkout_session
 
@@ -186,14 +185,13 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     def create_order_items(self, basket: Basket, order: Order):
-        for order_item in basket.basket_items.all():
+        for order_item in  basket.basket_items.all():
             item = Item.objects.get(name=order_item.item)
             OrderItem.objects.create(
                 order=order,
                 item=item,
                 price=item.price
             )
-
     def get_basket_for_user(self, user: User) -> Basket:
         basket = Basket.objects.get(user=user)
         return basket
@@ -205,7 +203,7 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return DeliveryAddress.objects.get(user=user)
 
     def create_order(
-            self, user: User, delivery_address: DeliveryAddress
+        self, user: User, delivery_address: DeliveryAddress
     ) -> Order:
         return (Order.objects.
                 create(user=user, delivery_address=delivery_address))
@@ -213,8 +211,8 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
 @csrf_exempt
 def stripe_webhook(request):
-    stripe.api_key = STRIPE_SECRET_KEY
-    endpoint_secret = STRIPE_WEBHOOK_SECRET
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
     try:

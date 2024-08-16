@@ -48,6 +48,7 @@ class ManageUserSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(max_length=100)
     is_email_verified = serializers.BooleanField(read_only=True)
     delivery_address = DeliveryAddressSerializer()
+    orders = serializers.SerializerMethodField()
 
     class Meta:
         model = get_user_model()
@@ -60,7 +61,13 @@ class ManageUserSerializer(serializers.ModelSerializer):
             "is_email_verified",
             "phone_number",
             "delivery_address",
+            "orders",
         ]
+
+    def get_orders(self, obj):
+        from store_service.serializers import OrderSerializer
+        return OrderSerializer(obj.orders.filter(is_paid=True), many=True).data
+
 
     def update(self, instance, validated_data):
         instance.first_name = (validated_data
