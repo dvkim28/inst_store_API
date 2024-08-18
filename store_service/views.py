@@ -171,7 +171,6 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         try:
             order = self.create_order(user, delivery_address)
             self.create_order_items(basket, order)
-            self.delete_basket(basket)
         except Exception as e:
             return Response({"error": str(e)},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -199,7 +198,8 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         basket = Basket.objects.get(user=user)
         return basket
 
-    def delete_basket(self, basket) -> None:
+    def delete_basket(self, basket, user) -> None:
+        basket = Basket.objects.get(user=user)
         basket.delete()
 
     def get_delivery_address(self, user: User) -> str:
@@ -234,7 +234,10 @@ def stripe_webhook(request):
 def mark_order_complete(event: dict) -> None:
     session = event["data"]["object"]
     order_id = session["metadata"].get("order_id")
-    send_telegram_message.delay(order_id)
     order = Order.objects.get(id=order_id)
+    user = order.user
+    basket = Basket.objects.get(user=user)
+    OrderModelViewSet.delete_basket(basket, user)
+    send_telegram_message.delay(order_id)
     order.is_paid = True
     order.save()

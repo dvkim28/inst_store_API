@@ -63,6 +63,8 @@ class ManageUserSerializer(serializers.ModelSerializer):
             "delivery_address",
             "orders",
         ]
+        read_only_fields = ["id", "is_staff", "is_email_verified"]
+
 
     def get_orders(self, obj):
         from store_service.serializers import OrderSerializer
