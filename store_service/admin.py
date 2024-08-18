@@ -1,5 +1,4 @@
 from django.contrib import admin
-
 from .models import (
     Category,
     ImageItem,
@@ -9,16 +8,22 @@ from .models import (
     Order,
     Basket,
     OrderItem,
+    ItemInventory,
 )
 
 
+@admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
-    list_display = ("name", "price", "category")
+    list_display = ("name", "price", "category", "sale")
     filter_horizontal = ("images",)
+    list_filter = ("category", "sale")
+    search_fields = ("name", "brand")
 
 
+@admin.register(ImageItem)
 class ImageItemAdmin(admin.ModelAdmin):
-    list_display = ("image",)
+    list_display = ("id", "image",)
+    search_fields = ("id",)
 
 
 class OrderItemInline(admin.TabularInline):
@@ -26,16 +31,40 @@ class OrderItemInline(admin.TabularInline):
     extra = 1
 
 
+@admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "delivery_address", "created_at", "is_paid")
+    list_filter = ("is_paid", "created_at")
+    search_fields = ("user__username", "delivery_address__address")
     inlines = [OrderItemInline]
 
 
-admin.site.register(Order, OrderAdmin)
+@admin.register(ItemInventory)
+class ItemInventoryAdmin(admin.ModelAdmin):
+    list_display = ('item', 'size', 'color', 'quantity')
+    list_filter = ('item', 'size', 'color')
+    search_fields = ('item__name', 'size__size', 'color__color')
 
-admin.site.register(Item, ItemAdmin)
-admin.site.register(ImageItem, ImageItemAdmin)
-admin.site.register(ItemColor)
-admin.site.register(Category)
-admin.site.register(ItemSize)
-admin.site.register(Basket)
+
+@admin.register(ItemColor)
+class ItemColorAdmin(admin.ModelAdmin):
+    list_display = ('color',)
+    search_fields = ('color',)
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+
+
+@admin.register(ItemSize)
+class ItemSizeAdmin(admin.ModelAdmin):
+    list_display = ('size',)
+    search_fields = ('size',)
+
+
+@admin.register(Basket)
+class BasketAdmin(admin.ModelAdmin):
+    list_display = ('user',)
+    search_fields = ('user__username',)

@@ -4,14 +4,14 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from .models import Basket, Category, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor
+from .models import Basket, Category, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor, ItemInventory
 from .serializers import (
     BasketSerializer,
     CategorySerializer,
     ItemDetailSerializer,
     ItemSerializer,
     OrderSerializer,
-    BasketItemSerializer,
+    BasketItemSerializer, CategoryDetailSerializer,
 )
 
 from user_service.models import User, DeliveryAddress
@@ -108,19 +108,24 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         return BasketItem.objects.filter(basket__user=user)
 
     def create(self, request, *args, **kwargs):
-        item = request.data["item"]
+        item_id = request.data.get("item")
         size = request.data.get('size')
         color = request.data.get('color')
         quantity = request.data.get('quantity', 1)
 
         try:
-            item = Item.objects.get(name=item)
+            item = Item.objects.get(id=item_id)
             size = ItemSize.objects.get(size=size)
             color = ItemColor.objects.get(color=color)
-        except Item.DoesNotExist or ItemSize.DoesNotExist or ItemColor.DoesNotExist:
-            return Response({'error': 'Item, size, or color not found'}, status=status.HTTP_400_BAD_REQUEST)
+            inventory = ItemInventory.objects.get(item=item, size=size, color=color)
 
-        basket, created = Basket.objects.get_or_create(user=request.user)
+            if inventory.quantity < int(quantity):
+                return Response({'error': 'Not enough items in stock'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except (Item.DoesNotExist, ItemSize.DoesNotExist, ItemColor.DoesNotExist, ItemInventory.DoesNotExist):
+            return Response({'error': 'Item, size, color, or inventory not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        basket, _ = Basket.objects.get_or_create(user=request.user)
 
         basket_item, created = BasketItem.objects.get_or_create(
             basket=basket,
@@ -131,8 +136,14 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         )
 
         if not created:
+            if inventory.quantity < basket_item.quantity + int(quantity):
+                return Response({'error': 'Not enough items in stock'}, status=status.HTTP_400_BAD_REQUEST)
             basket_item.quantity += int(quantity)
             basket_item.save()
+
+        # Обновляем инвентарь
+        inventory.quantity -= int(quantity)
+        inventory.save()
 
         serializer = self.get_serializer(basket_item)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -148,6 +159,12 @@ class BasketItemViewSet(viewsets.ModelViewSet):
 class CategoryModelViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return CategoryDetailSerializer
+        else:
+            return self.serializer_class
 
 
 @extend_schema_view(
@@ -185,15 +202,27 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
     def create_order_items(self, basket: Basket, order: Order):
-        for order_item in basket.basket_items.all():
+        for basket_item in basket.basket_items.all():
+            # Обновляем инвентарь
+            inventory = ItemInventory.objects.get(
+                item=basket_item.item, size=basket_item.size, color=basket_item.color
+            )
+            if inventory.quantity < basket_item.quantity:
+                raise ValueError("Not enough items in stock")
+
+            inventory.quantity -= basket_item.quantity
+            inventory.save()
+
+            # Создаем OrderItem
             OrderItem.objects.create(
                 order=order,
-                item=order_item.item,
-                price=order_item.price,
-                size=order_item.size,
-                color=order_item.color,
-                quantity=order_item.quantity,
+                item=basket_item.item,
+                price=basket_item.price,
+                size=basket_item.size,
+                color=basket_item.color,
+                quantity=basket_item.quantity,
             )
+
     def get_basket_for_user(self, user: User) -> Basket:
         basket = Basket.objects.get(user=user)
         return basket

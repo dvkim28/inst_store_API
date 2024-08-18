@@ -2,7 +2,9 @@ from rest_framework import serializers
 
 from user_service.serializers import UserSerializer
 
-from .models import Basket, Category, ImageItem, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor
+from .models import (
+    Basket, Category, ImageItem, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor, ItemInventory
+)
 from user_service.serializers import DeliveryAddressSerializer
 
 
@@ -24,6 +26,8 @@ class ItemSerializer(serializers.ModelSerializer):
         many=True
     )
     images = serializers.SerializerMethodField()
+    in_stock = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Item
@@ -46,18 +50,24 @@ class ItemSerializer(serializers.ModelSerializer):
     def get_images(self, obj):
         return [image.image.url for image in obj.images.all()]
 
+    def get_in_stock(self, obj):
+        return ItemInventory.objects.filter(item=obj, quantity__gt=0).exists()
+
 
 class ItemDetailSerializer(ItemSerializer):
     class Meta:
         model = Item
-        fields = ["id",
-                  "images",
-                  "name",
-                  "description",
-                  "price",
-                  "category",
-                  "date_added",
-                  "size"]
+        fields = [
+            "id",
+            "images",
+            "name",
+            "description",
+            "price",
+            "category",
+            "date_added",
+            "size",
+            "color",
+        ]
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
@@ -71,15 +81,21 @@ class BasketItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'item', 'size', 'color', 'quantity', "price"]
 
     def validate(self, data):
-        basket = self.context['request'].user.basket
-        if BasketItem.objects.filter(
-            basket=basket,
-            item=data['item'],
-            size=data['size'],
-            color=data['color']
-        ).exists():
-            raise serializers.ValidationError('This item already exists in the basket with the selected size and color.')
+        item = data['item']
+        size = data['size']
+        color = data['color']
+        quantity = data['quantity']
+
+        try:
+            inventory = ItemInventory.objects.get(item=item, size=size, color=color)
+        except ItemInventory.DoesNotExist:
+            raise serializers.ValidationError('This combination of item, size, and color does not exist in inventory.')
+
+        if inventory.quantity < quantity:
+            raise serializers.ValidationError('Not enough items in stock.')
+
         return data
+
 
 class BasketSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -97,20 +113,29 @@ class BasketListSerializer(BasketSerializer):
         fields = ["id", "user", "items"]
 
 
-
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "description"]
 
 
+class CategoryDetailSerializer(CategorySerializer):
+    items = ItemDetailSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Category
+        fields = ["id", "name", "description", "items"]
+
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     item = serializers.SlugRelatedField(slug_field="name", read_only=True)
+    size = serializers.SlugRelatedField(slug_field='size', read_only=True)
+    color = serializers.SlugRelatedField(slug_field='color', read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ["item", "price"]
+        fields = ["item", "price", "size", "color", "quantity"]
 
 
 class OrderSerializer(serializers.ModelSerializer):

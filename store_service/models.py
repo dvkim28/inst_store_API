@@ -3,7 +3,7 @@ import os
 import basket
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import DecimalField
+from django.db.models import DecimalField, Sum
 
 from user_service.models import DeliveryAddress
 
@@ -38,8 +38,7 @@ class Item(models.Model):
     description = models.TextField()
     price = DecimalField(max_digits=9, decimal_places=2)
     sale_price = DecimalField(
-        max_digits=9,
-        decimal_places=2,
+        max_digits=9, decimal_places=2,
         null=True,
         blank=True)
     category = models.ForeignKey(
@@ -47,13 +46,18 @@ class Item(models.Model):
     )
     size = models.ManyToManyField("ItemSize", related_name="items")
     color = models.ManyToManyField("ItemColor", related_name="items")
-    in_stock = models.BooleanField(default=False)
     sale = models.BooleanField(default=False)
     images = models.ManyToManyField(ImageItem, blank=True)
     date_added = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return self.name
+
+    def total_stock(self):
+        return self.inventory.aggregate(total=Sum('quantity'))['total'] or 0
+
+    def is_in_stock(self):
+        return self.total_stock() > 0
 
 
 class ItemSize(models.Model):
@@ -62,6 +66,18 @@ class ItemSize(models.Model):
 
 class ItemColor(models.Model):
     color = models.CharField(max_length=100)
+
+class ItemInventory(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="inventory")
+    size = models.ForeignKey(ItemSize, on_delete=models.CASCADE, related_name="inventory")
+    color = models.ForeignKey(ItemColor, on_delete=models.CASCADE, related_name="inventory")
+    quantity = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ['item', 'size', 'color']
+
+    def __str__(self):
+        return f"{self.item.name} - {self.size.size} - {self.color.color} ({self.quantity})"
 
 
 class Basket(models.Model):
