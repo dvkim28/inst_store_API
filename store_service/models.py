@@ -35,7 +35,6 @@ class Item(models.Model):
         blank=True,
         null=True)
     fabric = models.CharField(max_length=100, blank=True, null=True)
-    description = models.TextField()
     price = DecimalField(max_digits=9, decimal_places=2)
     sale_price = DecimalField(
         max_digits=9, decimal_places=2,
@@ -78,6 +77,11 @@ class ItemInventory(models.Model):
 
     def __str__(self):
         return f"{self.item.name} - {self.size.size} - {self.color.color} ({self.quantity})"
+
+class ItemDescription(models.Model):
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="description")
 
 
 class Basket(models.Model):

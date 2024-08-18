@@ -9,8 +9,12 @@ from .models import (
     Basket,
     OrderItem,
     ItemInventory,
+    ItemDescription
 )
 
+class ItemDescriptionInline(admin.TabularInline):
+    model = ItemDescription
+    extra = 1  # Показывает одну пустую форму для добавления нового описания
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
@@ -18,7 +22,7 @@ class ItemAdmin(admin.ModelAdmin):
     filter_horizontal = ("images",)
     list_filter = ("category", "sale")
     search_fields = ("name", "brand")
-
+    inlines = [ItemDescriptionInline]  # Добавляем ItemDescriptionInline
 
 @admin.register(ImageItem)
 class ImageItemAdmin(admin.ModelAdmin):

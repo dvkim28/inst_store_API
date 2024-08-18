@@ -3,9 +3,14 @@ from rest_framework import serializers
 from user_service.serializers import UserSerializer
 
 from .models import (
-    Basket, Category, ImageItem, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor, ItemInventory
+    Basket, Category, ImageItem, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor, ItemInventory, ItemDescription
 )
 from user_service.serializers import DeliveryAddressSerializer
+
+class ItemDescription(serializers.ModelSerializer):
+    class Meta:
+        model = ItemDescription
+        fields = ["title", "description"]
 
 
 class ImageItemSerializer(serializers.ModelSerializer):
@@ -27,6 +32,7 @@ class ItemSerializer(serializers.ModelSerializer):
     )
     images = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
+    description = ItemDescription(many=True, read_only=True)
 
 
     class Meta:
