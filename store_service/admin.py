@@ -19,7 +19,7 @@ class ItemDescriptionInline(admin.TabularInline):
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
     list_display = ("name", "price", "category", "sale")
-    filter_horizontal = ("images",)
+    # filter_horizontal = ("images",)
     list_filter = ("category", "sale")
     search_fields = ("name", "brand")
     inlines = [ItemDescriptionInline]  # Добавляем ItemDescriptionInline

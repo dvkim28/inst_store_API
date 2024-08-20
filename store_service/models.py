@@ -46,7 +46,8 @@ class Item(models.Model):
     size = models.ManyToManyField("ItemSize", related_name="items")
     color = models.ManyToManyField("ItemColor", related_name="items")
     sale = models.BooleanField(default=False)
-    images = models.ManyToManyField(ImageItem, blank=True)
+    image = models.ImageField(upload_to=item_upload_path, blank=True, null=True)
+    # images = models.ManyToManyField(ImageItem, blank=True)
     date_added = models.DateField(auto_now_add=True)
 
     def __str__(self):
