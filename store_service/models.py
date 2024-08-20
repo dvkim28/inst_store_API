@@ -22,6 +22,7 @@ def item_upload_path(instance, filename) -> str:
 
 
 class ImageItem(models.Model):
+    item = models.ForeignKey("Item", on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(
         upload_to=item_upload_path,
         null=True,
@@ -46,7 +47,6 @@ class Item(models.Model):
     size = models.ManyToManyField("ItemSize", related_name="items")
     color = models.ManyToManyField("ItemColor", related_name="items")
     sale = models.BooleanField(default=False)
-    images = models.ManyToManyField(ImageItem, blank=True)
     date_added = models.DateField(auto_now_add=True)
 
     def __str__(self):
