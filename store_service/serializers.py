@@ -30,7 +30,7 @@ class ItemSerializer(serializers.ModelSerializer):
         read_only=True,
         many=True
     )
-    images = serializers.SerializerMethodField()
+    # images = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
     description = ItemDescription(many=True, read_only=True)
 
@@ -42,7 +42,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "sale_price",
             "brand",
             "date_added",
-            "images",
+            "image",
             "name",
             "description",
             "price",
