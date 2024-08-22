@@ -7,19 +7,7 @@ from .models import (
 )
 from user_service.serializers import DeliveryAddressSerializer
 
-class ItemDescription(serializers.ModelSerializer):
-    class Meta:
-        model = ItemDescription
-        fields = ["title", "description"]
-
-
-class ImageItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ImageItem
-        fields = ["image"]
-
-
-class ItemSerializer(serializers.ModelSerializer):
+class AdditionalInfoSerializer(serializers.Serializer):
     size = serializers.SlugRelatedField(
         slug_field="size",
         read_only=True,
@@ -30,10 +18,24 @@ class ItemSerializer(serializers.ModelSerializer):
         read_only=True,
         many=True
     )
+    # amount = serializers.IntegerField()
+
+
+class ItemDescriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemDescription
+        fields = ["title", "description"]
+
+class ImageItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImageItem
+        fields = ["image"]
+
+class ItemSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
-    description = ItemDescription(many=True, read_only=True)
-
+    description = ItemDescriptionSerializer(many=True, read_only=True)
+    additional_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
@@ -47,10 +49,9 @@ class ItemSerializer(serializers.ModelSerializer):
             "description",
             "price",
             "category",
-            "size",
-            "color",
             "sale",
             "in_stock",
+            "additional_info",
         ]
 
     def get_images(self, obj):
@@ -59,7 +60,17 @@ class ItemSerializer(serializers.ModelSerializer):
     def get_in_stock(self, obj):
         return ItemInventory.objects.filter(item=obj, quantity__gt=0).exists()
 
+    def get_additional_info(self, obj):
+        inventory = ItemInventory.objects.filter(item=obj)
+        additional_info_list = []
+        for inv in inventory:
+            additional_info_list.append({
+                'size': inv.size.size,
+                'color': inv.color.color,
+                'amount': inv.quantity
+            })
 
+        return additional_info_list
 class ItemDetailSerializer(ItemSerializer):
     class Meta:
         model = Item
@@ -71,10 +82,8 @@ class ItemDetailSerializer(ItemSerializer):
             "price",
             "category",
             "date_added",
-            "size",
-            "color",
+            "additional_info",
         ]
-
 
 class BasketItemSerializer(serializers.ModelSerializer):
     item = serializers.SlugRelatedField(slug_field='name', queryset=Item.objects.all())
@@ -102,7 +111,6 @@ class BasketItemSerializer(serializers.ModelSerializer):
 
         return data
 
-
 class BasketSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     basket_items = BasketItemSerializer(many=True, read_only=True)
@@ -111,19 +119,16 @@ class BasketSerializer(serializers.ModelSerializer):
         model = Basket
         fields = ["id", "user", "basket_items"]
 
-
 class BasketListSerializer(BasketSerializer):
     items = ItemDetailSerializer(many=True, read_only=True)
 
     class Meta(BasketSerializer.Meta):
         fields = ["id", "user", "items"]
 
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "description"]
-
 
 class CategoryDetailSerializer(CategorySerializer):
     items = ItemDetailSerializer(many=True, read_only=True)
@@ -131,8 +136,6 @@ class CategoryDetailSerializer(CategorySerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "description", "items"]
-
-
 
 class OrderItemSerializer(serializers.ModelSerializer):
     item = serializers.SlugRelatedField(slug_field="name", read_only=True)
@@ -142,7 +145,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = ["item", "price", "size", "color", "quantity"]
-
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
