@@ -61,10 +61,15 @@ class Item(models.Model):
 
 class ItemSize(models.Model):
     size = models.CharField(max_length=100)
+    def __str__(self):
+        return self.size
 
 
 class ItemColor(models.Model):
     color = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.color
 
 class ItemInventory(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="inventory")
@@ -87,6 +92,9 @@ class ItemDescription(models.Model):
 class Basket(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f"basket for {self.user}"
+
 
 class BasketItem(models.Model):
     basket = models.ForeignKey(Basket, on_delete=models.CASCADE, related_name="basket_items")
@@ -108,6 +116,9 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
     checkout_url = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Order: {self.user} - {self.delivery_address}"
 
 
 class OrderItem(models.Model):
