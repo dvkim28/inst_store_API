@@ -108,13 +108,13 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         return BasketItem.objects.filter(basket__user=user)
 
     def create(self, request, *args, **kwargs):
-        item_id = request.data.get("item")
+        item = request.data.get("item")
         size = request.data.get('size')
         color = request.data.get('color')
         quantity = request.data.get('quantity', 1)
 
         try:
-            item = Item.objects.get(id=item_id)
+            item = Item.objects.get(name=item)
             size = ItemSize.objects.get(size=size)
             color = ItemColor.objects.get(color=color)
             inventory = ItemInventory.objects.get(item=item, size=size, color=color)
