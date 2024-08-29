@@ -32,7 +32,8 @@ def send_telegram_message(order_id: int) -> None:
         items_detail = "\n".join(
             [
                 f"{item.item.name} (Size: {item.size}, Color: {item.color}) - {item.quantity} x {item.price} each"
-                for item in order_items]
+                for item in order_items
+            ]
         )
 
         message = (

@@ -5,21 +5,24 @@ from django.utils.translation import get_language
 
 
 from .models import (
-    Basket, Category, ImageItem, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor, ItemInventory, ItemDescription
+    Basket,
+    Category,
+    ImageItem,
+    Item,
+    Order,
+    OrderItem,
+    BasketItem,
+    ItemSize,
+    ItemColor,
+    ItemInventory,
+    ItemDescription,
 )
 from user_service.serializers import DeliveryAddressSerializer
 
+
 class AdditionalInfoSerializer(serializers.Serializer):
-    size = serializers.SlugRelatedField(
-        slug_field="size",
-        read_only=True,
-        many=True
-    )
-    color = serializers.SlugRelatedField(
-        slug_field="color",
-        read_only=True,
-        many=True
-    )
+    size = serializers.SlugRelatedField(slug_field="size", read_only=True, many=True)
+    color = serializers.SlugRelatedField(slug_field="color", read_only=True, many=True)
     # amount = serializers.IntegerField()
 
 
@@ -28,10 +31,12 @@ class ItemDescriptionSerializer(serializers.ModelSerializer):
         model = ItemDescription
         fields = ["title", "description"]
 
+
 class ImageItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImageItem
         fields = ["image"]
+
 
 class ItemSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
@@ -67,13 +72,17 @@ class ItemSerializer(serializers.ModelSerializer):
         inventory = ItemInventory.objects.filter(item=obj)
         additional_info_list = []
         for inv in inventory:
-            additional_info_list.append({
-                'size': inv.size.size,
-                'color': inv.color.color,
-                'amount': inv.quantity
-            })
+            additional_info_list.append(
+                {
+                    "size": inv.size.size,
+                    "color": inv.color.color,
+                    "amount": inv.quantity,
+                }
+            )
 
         return additional_info_list
+
+
 class ItemDetailSerializer(ItemSerializer):
     class Meta:
         model = Item
@@ -88,31 +97,39 @@ class ItemDetailSerializer(ItemSerializer):
             "additional_info",
         ]
 
+
 class BasketItemSerializer(serializers.ModelSerializer):
-    item = serializers.SlugRelatedField(slug_field='name', queryset=Item.objects.all())
-    size = serializers.SlugRelatedField(slug_field='size', queryset=ItemSize.objects.all())
-    color = serializers.SlugRelatedField(slug_field='color', queryset=ItemColor.objects.all())
+    item = serializers.SlugRelatedField(slug_field="name", queryset=Item.objects.all())
+    size = serializers.SlugRelatedField(
+        slug_field="size", queryset=ItemSize.objects.all()
+    )
+    color = serializers.SlugRelatedField(
+        slug_field="color", queryset=ItemColor.objects.all()
+    )
     quantity = serializers.IntegerField()
 
     class Meta:
         model = BasketItem
-        fields = ['id', 'item', 'size', 'color', 'quantity']
+        fields = ["id", "item", "size", "color", "quantity"]
 
     def validate(self, data):
-        item = data['item']
-        size = data['size']
-        color = data['color']
-        quantity = data['quantity']
+        item = data["item"]
+        size = data["size"]
+        color = data["color"]
+        quantity = data["quantity"]
 
         try:
             inventory = ItemInventory.objects.get(item=item, size=size, color=color)
         except ItemInventory.DoesNotExist:
-            raise serializers.ValidationError('This combination of item, size, and color does not exist in inventory.')
+            raise serializers.ValidationError(
+                "This combination of item, size, and color does not exist in inventory."
+            )
 
         if inventory.quantity < quantity:
-            raise serializers.ValidationError('Not enough items in stock.')
+            raise serializers.ValidationError("Not enough items in stock.")
 
         return data
+
 
 class BasketSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -122,16 +139,19 @@ class BasketSerializer(serializers.ModelSerializer):
         model = Basket
         fields = ["id", "user", "basket_items"]
 
+
 class BasketListSerializer(BasketSerializer):
     items = ItemDetailSerializer(many=True, read_only=True)
 
     class Meta(BasketSerializer.Meta):
         fields = ["id", "user", "items"]
 
+
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "description"]
+
 
 class CategoryDetailSerializer(CategorySerializer):
     items = ItemDetailSerializer(many=True, read_only=True)
@@ -140,14 +160,16 @@ class CategoryDetailSerializer(CategorySerializer):
         model = Category
         fields = ["id", "name", "description", "items"]
 
+
 class OrderItemSerializer(serializers.ModelSerializer):
     item = serializers.SlugRelatedField(slug_field="name", read_only=True)
-    size = serializers.SlugRelatedField(slug_field='size', read_only=True)
-    color = serializers.SlugRelatedField(slug_field='color', read_only=True)
+    size = serializers.SlugRelatedField(slug_field="size", read_only=True)
+    color = serializers.SlugRelatedField(slug_field="color", read_only=True)
 
     class Meta:
         model = OrderItem
         fields = ["item", "price", "size", "color", "quantity"]
+
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)

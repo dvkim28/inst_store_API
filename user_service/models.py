@@ -54,10 +54,7 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(_("email address"), unique=True)
     is_email_verified = models.BooleanField(default=False)
-    verification_token = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True)
+    verification_token = models.CharField(max_length=100, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     delivery_address = models.ForeignKey(
         DeliveryAddress, on_delete=models.CASCADE, null=True, blank=True

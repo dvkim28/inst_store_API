@@ -65,17 +65,14 @@ class ManageUserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "is_staff", "is_email_verified"]
 
-
     def get_orders(self, obj):
         from store_service.serializers import OrderSerializer
+
         return OrderSerializer(obj.orders.filter(is_paid=True), many=True).data
 
-
     def update(self, instance, validated_data):
-        instance.first_name = (validated_data
-                               .get("first_name", instance.first_name))
-        instance.last_name = (validated_data
-                              .get("last_name", instance.last_name))
+        instance.first_name = validated_data.get("first_name", instance.first_name)
+        instance.last_name = validated_data.get("last_name", instance.last_name)
         instance.phone_number = validated_data.get(
             "phone_number", instance.phone_number
         )

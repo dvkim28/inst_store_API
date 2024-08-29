@@ -4,14 +4,25 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from .models import Basket, Category, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor, ItemInventory
+from .models import (
+    Basket,
+    Category,
+    Item,
+    Order,
+    OrderItem,
+    BasketItem,
+    ItemSize,
+    ItemColor,
+    ItemInventory,
+)
 from .serializers import (
     BasketSerializer,
     CategorySerializer,
     ItemDetailSerializer,
     ItemSerializer,
     OrderSerializer,
-    BasketItemSerializer, CategoryDetailSerializer,
+    BasketItemSerializer,
+    CategoryDetailSerializer,
 )
 
 from user_service.models import User, DeliveryAddress
@@ -26,7 +37,7 @@ from .utils import create_checkout_session
     list=extend_schema(
         summary="List items",
         description="Retrieve a list of items, with optional filters for size,"
-                    " color, brand, sale status, stock status, and ordering.",
+        " color, brand, sale status, stock status, and ordering.",
         responses={200: ItemSerializer(many=True)},
     ),
     retrieve=extend_schema(
@@ -77,8 +88,7 @@ class ItemModelViewSet(viewsets.ModelViewSet):
 @extend_schema_view(
     create=extend_schema(
         summary="Create a basket",
-        description="Create a new basket "
-                    "for the current user and add items to it.",
+        description="Create a new basket " "for the current user and add items to it.",
         responses={201: BasketSerializer},
     ),
 )
@@ -109,9 +119,9 @@ class BasketItemViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         item = request.data.get("item")
-        size = request.data.get('size')
-        color = request.data.get('color')
-        quantity = request.data.get('quantity', 1)
+        size = request.data.get("size")
+        color = request.data.get("color")
+        quantity = request.data.get("quantity", 1)
 
         try:
             item = Item.objects.get(name=item)
@@ -120,10 +130,21 @@ class BasketItemViewSet(viewsets.ModelViewSet):
             inventory = ItemInventory.objects.get(item=item, size=size, color=color)
 
             if inventory.quantity < int(quantity):
-                return Response({'error': 'Not enough items in stock'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Not enough items in stock"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        except (Item.DoesNotExist, ItemSize.DoesNotExist, ItemColor.DoesNotExist, ItemInventory.DoesNotExist):
-            return Response({'error': 'Item, size, color, or inventory not found'}, status=status.HTTP_400_BAD_REQUEST)
+        except (
+            Item.DoesNotExist,
+            ItemSize.DoesNotExist,
+            ItemColor.DoesNotExist,
+            ItemInventory.DoesNotExist,
+        ):
+            return Response(
+                {"error": "Item, size, color, or inventory not found"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         basket, _ = Basket.objects.get_or_create(user=request.user)
 
@@ -132,12 +153,15 @@ class BasketItemViewSet(viewsets.ModelViewSet):
             item=item,
             size=size,
             color=color,
-            defaults={'quantity': quantity}
+            defaults={"quantity": quantity},
         )
 
         if not created:
             if inventory.quantity < basket_item.quantity + int(quantity):
-                return Response({'error': 'Not enough items in stock'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Not enough items in stock"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             basket_item.quantity += int(quantity)
             basket_item.save()
 
@@ -172,7 +196,7 @@ class CategoryModelViewSet(viewsets.ModelViewSet):
         request=OrderSerializer,
         summary="Create an order",
         description="Create a new order for the user,"
-                    " including delivery address and items from the basket.",
+        " including delivery address and items from the basket.",
         responses={201: OrderSerializer},
     ),
 )
@@ -189,13 +213,11 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             order = self.create_order(user, delivery_address)
             self.create_order_items(basket, order)
         except Exception as e:
-            return Response({"error": str(e)},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         try:
             checkout_url = create_checkout_session(order)
         except Exception as e:
-            return Response({"error": str(e)},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(order)
         response_data = serializer.data
         response_data["checkout_url"] = checkout_url
@@ -234,11 +256,8 @@ class OrderModelViewSet(viewsets.ModelViewSet):
     def get_delivery_address(self, user: User) -> str:
         return DeliveryAddress.objects.get(user=user)
 
-    def create_order(
-        self, user: User, delivery_address: DeliveryAddress
-    ) -> Order:
-        return (Order.objects.
-                create(user=user, delivery_address=delivery_address))
+    def create_order(self, user: User, delivery_address: DeliveryAddress) -> Order:
+        return Order.objects.create(user=user, delivery_address=delivery_address)
 
 
 @csrf_exempt
@@ -248,8 +267,7 @@ def stripe_webhook(request):
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
     try:
-        event = (stripe.Webhook.
-                 construct_event(payload, sig_header, endpoint_secret))
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
     except ValueError:
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError:

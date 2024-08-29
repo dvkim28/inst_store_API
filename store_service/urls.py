@@ -14,7 +14,7 @@ router.register("items", ItemModelViewSet)
 router.register("basket", BasketModelViewSet)
 router.register("categories", CategoryModelViewSet)
 router.register("orders", OrderModelViewSet)
-router.register(r'basket-items', BasketItemViewSet, basename='basketitem')
+router.register(r"basket-items", BasketItemViewSet, basename="basketitem")
 
 urlpatterns = [
     path("", include(router.urls)),
