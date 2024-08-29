@@ -1,9 +1,8 @@
 import os
 
 import stripe
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 
+from django.utils.translation import get_language
 from .models import Order
 from config import settings
 

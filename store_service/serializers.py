@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from user_service.serializers import UserSerializer
+from django.utils.translation import get_language
+
 
 from .models import (
     Basket, Category, ImageItem, Item, Order, OrderItem, BasketItem, ItemSize, ItemColor, ItemInventory, ItemDescription
@@ -44,6 +46,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "sale_price",
             "brand",
             "date_added",
+            "fabric",
             "images",
             "name",
             "description",

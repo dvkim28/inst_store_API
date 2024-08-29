@@ -3,7 +3,6 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView
 )
-
 from user_service.views import (
     ManageUserView,
     UserRegistrationView,
@@ -17,3 +16,5 @@ urlpatterns = [
     path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("verifying/", VerifyEmailView.as_view(), name="verifying_email"),
 ]
+
+app_name = "user_service"

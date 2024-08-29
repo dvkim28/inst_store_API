@@ -1,12 +1,12 @@
 from django.urls import include, path
 from rest_framework import routers
-
 from .views import (
     BasketModelViewSet,
     CategoryModelViewSet,
     ItemModelViewSet,
     OrderModelViewSet,
-    stripe_webhook, BasketItemViewSet,
+    stripe_webhook,
+    BasketItemViewSet,
 )
 
 router = routers.DefaultRouter()
@@ -15,7 +15,6 @@ router.register("basket", BasketModelViewSet)
 router.register("categories", CategoryModelViewSet)
 router.register("orders", OrderModelViewSet)
 router.register(r'basket-items', BasketItemViewSet, basename='basketitem')
-
 
 urlpatterns = [
     path("", include(router.urls)),

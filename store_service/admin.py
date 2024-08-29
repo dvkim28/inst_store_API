@@ -1,4 +1,5 @@
 from django.contrib import admin
+from modeltranslation.admin import TranslationAdmin
 from .models import (
     Category,
     ImageItem,
@@ -24,7 +25,7 @@ class ImageItemInline(admin.TabularInline):
 
 # Админская модель для товаров
 @admin.register(Item)
-class ItemAdmin(admin.ModelAdmin):
+class ItemAdmin(TranslationAdmin):
     list_display = ("name", "price", "category", "sale")
     list_filter = ("category", "sale")
     search_fields = ("name", "brand")
@@ -58,13 +59,13 @@ class ItemInventoryAdmin(admin.ModelAdmin):
 
 # Админская модель для цветов
 @admin.register(ItemColor)
-class ItemColorAdmin(admin.ModelAdmin):
+class ItemColorAdmin(TranslationAdmin):
     list_display = ('color',)
     search_fields = ('color',)
 
 # Админская модель для категорий
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(TranslationAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
