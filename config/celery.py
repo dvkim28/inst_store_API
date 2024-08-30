@@ -16,4 +16,4 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-
+broker_connection_retry_on_startup = True
