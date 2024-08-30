@@ -31,7 +31,6 @@ h2==3.2.0
 hpack==3.0.0
 hstspreload==2024.8.1
 hyperframe==5.2.0
-idna==3.7
 importlib_metadata==8.4.0
 inflection==0.5.1
 isort==5.13.2
