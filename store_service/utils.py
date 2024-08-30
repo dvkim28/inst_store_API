@@ -9,6 +9,7 @@ from config import settings
 
 def create_checkout_session(order_id: int) -> str:
     from store_service.models import Order
+
     stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
     if not stripe.api_key:
         raise ValueError("Stripe secret key is not set in environment variables")

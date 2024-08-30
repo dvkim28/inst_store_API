@@ -249,10 +249,11 @@ class OrderModelViewSet(viewsets.ModelViewSet):
     def get_basket_for_user(self, user: User) -> Basket:
         basket = Basket.objects.get(user=user)
         return basket
+
     @staticmethod
     def delete_basket(user) -> None:
-            basket = Basket.objects.get(user=user)
-            basket.delete()
+        basket = Basket.objects.get(user=user)
+        basket.delete()
 
     def get_delivery_address(self, user: User) -> str:
         return DeliveryAddress.objects.get(user=user)
