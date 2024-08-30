@@ -5,7 +5,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 if ! command -v stripe &> /dev/null; then
-    echo "Stripe CLI не найден, установка..."
+    echo "Stripe CLI not found, installing..."
     curl -fsSL https://cli.stripe.com/install.sh | bash
     export PATH="$PATH:/home/user/.local/bin"
 fi
