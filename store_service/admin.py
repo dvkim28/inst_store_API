@@ -78,3 +78,4 @@ class ItemSizeAdmin(admin.ModelAdmin):
     search_fields = ("size",)
 
 admin.site.register(Basket)
+admin.site.register(Order)
