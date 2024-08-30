@@ -215,7 +215,8 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            checkout_url = create_checkout_session(order)
+            checkout_url = create_checkout_session(order.id)
+            print("try second done")
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(order)

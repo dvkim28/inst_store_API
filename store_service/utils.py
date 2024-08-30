@@ -9,7 +9,7 @@ from config import settings
 
 def create_checkout_session(order_id: int) -> str:
     from store_service.models import Order
-
+    print(order_id)
     stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
     if not stripe.api_key:
         raise ValueError("Stripe secret key is not set in environment variables")
@@ -60,7 +60,7 @@ def translate_and_update_category(category_id: int) -> None:
     try:
         Category = apps.get_model("store_service", "Category")
         category = Category.objects.get(id=category_id)
-        translator = GoogleTranslator(source="en", target="uk")
+        translator = GoogleTranslator(source="en", target="ua")
         translated_name = translator.translate(category.name)
         translated_description = translator.translate(category.description)
         category.name_uk = translated_name
@@ -75,7 +75,7 @@ def translate_and_update_item(item_id: int) -> None:
     try:
         Item = apps.get_model("store_service", "Item")
         item = Item.objects.get(id=item_id)
-        translator = GoogleTranslator(source="en", target="uk")
+        translator = GoogleTranslator(source="en", target="ua")
 
         item_name = translator.translate(item.name)
         item_fabric = translator.translate(item.fabric)
@@ -96,7 +96,7 @@ def translate_and_update_description(item_id: int) -> None:
     try:
         i_descr = apps.get_model("store_service", "ItemDescription")
         ids = i_descr.objects.get(id=item_id)
-        translator = GoogleTranslator(source="en", target="uk")
+        translator = GoogleTranslator(source="en", target="ua")
 
         ids.title_uk = translator.translate(ids.title)
         ids.description_uk = translator.translate(ids.description)
