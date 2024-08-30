@@ -16,3 +16,4 @@ python manage.py makemigrations
 
 python manage.py migrate
 
+celery -A config worker --loglevel=info
