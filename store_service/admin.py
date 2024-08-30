@@ -9,7 +9,7 @@ from .models import (
     Order,
     OrderItem,
     ItemInventory,
-    ItemDescription,
+    ItemDescription, Basket,
 )
 
 
@@ -76,3 +76,5 @@ class CategoryAdmin(TranslationAdmin):
 class ItemSizeAdmin(admin.ModelAdmin):
     list_display = ("size",)
     search_fields = ("size",)
+
+admin.site.register(Basket)
