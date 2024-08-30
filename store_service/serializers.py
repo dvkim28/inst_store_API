@@ -126,7 +126,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
             )
 
         if inventory.quantity < quantity:
-            raise serializers.ValidationError("Not enough items in stock.")
+            raise serializers.ValidationError("Not enough items in stock 129")
 
         return data
 

@@ -131,7 +131,7 @@ class BasketItemViewSet(viewsets.ModelViewSet):
 
             if inventory.quantity < int(quantity):
                 return Response(
-                    {"error": "Not enough items in stock"},
+                    {"error": "Not enough items in stock 134"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -157,9 +157,9 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         )
 
         if not created:
-            if inventory.quantity < basket_item.quantity + int(quantity):
+            if inventory.quantity < basket_item.quantity:
                 return Response(
-                    {"error": "Not enough items in stock"},
+                    {"error": "Not enough items in stock 162"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             basket_item.quantity += int(quantity)
@@ -230,6 +230,8 @@ class OrderModelViewSet(viewsets.ModelViewSet):
                 item=basket_item.item, size=basket_item.size, color=basket_item.color
             )
             if inventory.quantity < basket_item.quantity:
+                print(inventory.quantity)
+                print(basket_item.quantity)
                 raise ValueError("Not enough items in stock")
 
             inventory.quantity -= basket_item.quantity
@@ -247,10 +249,10 @@ class OrderModelViewSet(viewsets.ModelViewSet):
     def get_basket_for_user(self, user: User) -> Basket:
         basket = Basket.objects.get(user=user)
         return basket
-
-    def delete_basket(self, basket, user) -> None:
-        basket = Basket.objects.get(user=user)
-        basket.delete()
+    @staticmethod
+    def delete_basket(user) -> None:
+            basket = Basket.objects.get(user=user)
+            basket.delete()
 
     def get_delivery_address(self, user: User) -> str:
         return DeliveryAddress.objects.get(user=user)
@@ -282,8 +284,7 @@ def mark_order_complete(event: dict) -> None:
     order_id = session["metadata"].get("order_id")
     order = Order.objects.get(id=order_id)
     user = order.user
-    basket = Basket.objects.get(user=user)
-    OrderModelViewSet.delete_basket(basket, user)
+    OrderModelViewSet.delete_basket(user)
     send_telegram_message.delay(order_id)
     order.is_paid = True
     order.save()
