@@ -119,6 +119,7 @@ class ItemInventory(models.Model):
         ItemColor, on_delete=models.CASCADE, related_name="inventory"
     )
     quantity = models.PositiveIntegerField(default=0)
+    price = models.DecimalField(max_digits=9, decimal_places=2)
 
     class Meta:
         unique_together = ["item", "size", "color"]

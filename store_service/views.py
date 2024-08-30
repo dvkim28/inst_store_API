@@ -216,7 +216,6 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         try:
             checkout_url = create_checkout_session(order.id)
-            print("try second done")
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(order)
@@ -226,7 +225,7 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
     def create_order_items(self, basket: Basket, order: Order):
         for basket_item in basket.basket_items.all():
-            # Обновляем инвентарь
+            item = Item.objects.get(id=basket_item.item.id)
             inventory = ItemInventory.objects.get(
                 item=basket_item.item, size=basket_item.size, color=basket_item.color
             )
@@ -236,11 +235,10 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             inventory.quantity -= basket_item.quantity
             inventory.save()
 
-            # Создаем OrderItem
             OrderItem.objects.create(
                 order=order,
                 item=basket_item.item,
-                price=basket_item.price,
+                price=item.price,
                 size=basket_item.size,
                 color=basket_item.color,
                 quantity=basket_item.quantity,
