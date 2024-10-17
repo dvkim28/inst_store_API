@@ -1,4 +1,5 @@
 import stripe
+import os
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
@@ -262,31 +263,50 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return Order.objects.create(user=user, delivery_address=delivery_address)
 
 
+import stripe
+import os
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+
 
 @csrf_exempt
 def stripe_webhook(request):
     stripe.api_key = settings.STRIPE_SECRET_KEY
     endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
-    payload = request.body
+
+
+    payload = request.body.decode("utf-8")  # Декодируем тело запроса
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
+
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-    except ValueError:
+    except ValueError as e:
+        # Некорректные данные
         return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError:
+    except stripe.error.SignatureVerificationError as e:
+        # Неверная сигнатура
         return HttpResponse(status=400)
+    except Exception as e:
+        # Общая обработка ошибок
+        return HttpResponse(status=500)
 
+    # Обработка событий вебхука
     if event["type"] == "checkout.session.completed":
-        mark_order_complete(event)
+        session = event["data"]["object"]
+        print(f"Успешная сессия чекаута: {session}")
+        mark_order_complete(session)
+    else:
+        # Логирование других событий для отладки
+        print(f"Необработанный тип события: {event['type']}")
+
     return HttpResponse(status=200)
 
 
 def mark_order_complete(event: dict) -> None:
-    session = event["data"]["object"]
-    order_id = session["metadata"].get("order_id")
+    order_id = event["metadata"]["order_id"]
     order = Order.objects.get(id=order_id)
     user = order.user
     OrderModelViewSet.delete_basket(user)
-    send_telegram_message.delay(order_id)
+    # send_telegram_message.delay(order_id)
     order.is_paid = True
-    order.save()

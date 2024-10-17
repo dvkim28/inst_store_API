@@ -9,8 +9,11 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
+from store_service.views import stripe_webhook
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("webhook/", stripe_webhook),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "api/schema/swagger-ui/",
