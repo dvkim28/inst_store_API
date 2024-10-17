@@ -253,8 +253,19 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def delete_basket(user) -> None:
-        basket = Basket.objects.get(user=user)
-        basket.delete()
+        try:
+            basket = Basket.objects.get(user=user)
+            print(f"Basket found: {basket}")
+            try:
+                basket.delete()
+                print("Basket deleted successfully")
+            except Exception as e:
+                print(f"Error during basket deletion: {e}")
+
+        except Basket.DoesNotExist:
+            print(f"No basket found for user {user}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
 
     def get_delivery_address(self, user: User) -> str:
         return DeliveryAddress.objects.get(user=user)
@@ -276,30 +287,21 @@ def stripe_webhook(request):
     endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
 
 
-    payload = request.body.decode("utf-8")  # Декодируем тело запроса
+    payload = request.body.decode("utf-8")
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
     except ValueError as e:
-        # Некорректные данные
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        # Неверная сигнатура
         return HttpResponse(status=400)
     except Exception as e:
-        # Общая обработка ошибок
         return HttpResponse(status=500)
 
-    # Обработка событий вебхука
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
-        print(f"Успешная сессия чекаута: {session}")
         mark_order_complete(session)
-    else:
-        # Логирование других событий для отладки
-        print(f"Необработанный тип события: {event['type']}")
-
     return HttpResponse(status=200)
 
 
@@ -307,6 +309,12 @@ def mark_order_complete(event: dict) -> None:
     order_id = event["metadata"]["order_id"]
     order = Order.objects.get(id=order_id)
     user = order.user
-    OrderModelViewSet.delete_basket(user)
-    # send_telegram_message.delay(order_id)
+    print(f"Order before marking as paid: {order.is_paid}")
     order.is_paid = True
+    try:
+        print(f"Attempting to save order {order.id} with is_paid=True")
+        order.save()
+        print(f"Order {order.id} marked as paid: {order.is_paid}")
+    except Exception as e:
+        print(f"Error saving order: {e}")
+    OrderModelViewSet.delete_basket(user)
