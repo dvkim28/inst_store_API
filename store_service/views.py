@@ -51,6 +51,7 @@ class ItemModelViewSet(viewsets.ModelViewSet):
     serializer_class = ItemSerializer
     queryset = Item.objects.all()
 
+
     def get_serializer_class(self):
         if self.action == "retrieve":
             return ItemDetailSerializer
@@ -113,6 +114,7 @@ class BasketModelViewSet(viewsets.ModelViewSet):
 
 class BasketItemViewSet(viewsets.ModelViewSet):
     serializer_class = BasketItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -123,7 +125,7 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         size = request.data.get("size")
         color = request.data.get("color")
         quantity = request.data.get("quantity", 1)
-
+        print(f"item: {item}, size: {size}, color: {color}, quantity: {quantity}")
         try:
             item = Item.objects.get(name=item)
             size = ItemSize.objects.get(size=size)
