@@ -27,7 +27,7 @@ class ImageItemInline(admin.TabularInline):
 class ItemAdmin(TranslationAdmin):
     list_display = ("name", "price", "category", "sale")
     list_filter = ("category", "sale")
-    search_fields = ("name", "brand")
+    search_fields = ("name", "brand",)
     inlines = [ItemDescriptionInline, ImageItemInline]  #
 
 
@@ -47,17 +47,17 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "delivery_address", "created_at", "is_paid")
+    list_display = ("id", "user", "created_at", "is_paid")
     list_filter = ("is_paid", "created_at")
-    search_fields = ("user__username", "delivery_address__address")
+    search_fields = ("user__username",)
     inlines = [OrderItemInline]
 
 
 @admin.register(ItemInventory)
 class ItemInventoryAdmin(admin.ModelAdmin):
     list_display = ("item", "size", "color", "quantity")
-    list_filter = ("item", "size", "color")
-    search_fields = ("item__name", "size__size", "color__color")
+    list_filter = ("item", "size", "color",)
+    search_fields = ("item__name", "size__size", "color__color",)
 
 
 @admin.register(ItemColor)

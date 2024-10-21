@@ -26,7 +26,7 @@ from .serializers import (
     CategoryDetailSerializer,
 )
 
-from user_service.models import User, DeliveryAddress
+from user_service.models import User
 
 from config import settings
 
@@ -273,11 +273,8 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Unexpected error: {e}")
 
-    def get_delivery_address(self, user: User) -> str:
-        return DeliveryAddress.objects.get(user=user)
-
-    def create_order(self, user: User, delivery_address: DeliveryAddress) -> Order:
-        return Order.objects.create(user=user, delivery_address=delivery_address)
+    def create_order(self, user: User) -> Order:
+        return Order.objects.create(user=user)
 
 
 @csrf_exempt

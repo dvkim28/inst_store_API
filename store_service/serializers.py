@@ -17,13 +17,11 @@ from .models import (
     ItemInventory,
     ItemDescription,
 )
-from user_service.serializers import DeliveryAddressSerializer
 
 
 class AdditionalInfoSerializer(serializers.Serializer):
     size = serializers.SlugRelatedField(slug_field="size", read_only=True, many=True)
     color = serializers.SlugRelatedField(slug_field="color", read_only=True, many=True)
-    # amount = serializers.IntegerField()
 
 
 class ItemDescriptionSerializer(serializers.ModelSerializer):
@@ -174,7 +172,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
-    delivery_address = DeliveryAddressSerializer(read_only=True)
 
     class Meta:
         model = Order

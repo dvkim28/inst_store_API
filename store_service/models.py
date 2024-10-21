@@ -5,7 +5,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import DecimalField, Sum
 
-from user_service.models import DeliveryAddress
 from .utils import (
     translate_and_update_category,
     translate_and_update_item,
@@ -179,13 +178,12 @@ class Order(models.Model):
     user = models.ForeignKey(
         get_user_model(), on_delete=models.CASCADE, related_name="orders"
     )
-    delivery_address = models.ForeignKey(DeliveryAddress, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
     checkout_url = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Order: {self.user} - {self.delivery_address}"
+        return f"Order: {self.user}"
 
 
 class OrderItem(models.Model):
