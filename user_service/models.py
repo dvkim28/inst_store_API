@@ -3,17 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-
-class DeliveryAddress(models.Model):
-    country = models.CharField(max_length=50)
-    city = models.CharField(max_length=50)
-    state = models.CharField(max_length=50)
-    zip = models.CharField(max_length=10)
-
-    def __str__(self):
-        return f"{self.country}, {self.city}, {self.state}, {self.zip}"
-
-
 class UserManager(BaseUserManager):
     """Define a model manager for User model with no username field."""
 
@@ -49,16 +38,10 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    """User model."""
-
     username = None
     email = models.EmailField(_("email address"), unique=True)
     is_email_verified = models.BooleanField(default=False)
     verification_token = models.CharField(max_length=100, blank=True, null=True)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
-    delivery_address = models.ForeignKey(
-        DeliveryAddress, on_delete=models.CASCADE, null=True, blank=True
-    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
