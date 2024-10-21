@@ -84,7 +84,7 @@ class Item(models.Model):
             or old_fabric != self.fabric
             or old_descriptions != list(self.description.all())
         ):
-            translate_and_update_item.delay(self.pk)
+            translate_and_update_item(self.pk)
 
     def __str__(self):
         return self.name
@@ -169,6 +169,7 @@ class BasketItem(models.Model):
     size = models.ForeignKey(ItemSize, on_delete=models.CASCADE)
     color = models.ForeignKey(ItemColor, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
+    images = models.ManyToManyField(ImageItem, related_name="basket_items", blank=True)
 
     class Meta:
         unique_together = ["basket", "item", "size", "color"]

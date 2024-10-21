@@ -107,10 +107,11 @@ class BasketItemSerializer(serializers.ModelSerializer):
         slug_field="color", queryset=ItemColor.objects.all()
     )
     quantity = serializers.IntegerField()
+    images = ImageItemSerializer(many=True, read_only=True, source='item.images')
 
     class Meta:
         model = BasketItem
-        fields = ["id", "item", "size", "color", "quantity"]
+        fields = ["id", "item", "size", "color", "quantity", "images"]
 
     def validate(self, data):
         item = data["item"]

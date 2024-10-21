@@ -1,5 +1,5 @@
 import stripe
-import os
+from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
@@ -29,7 +29,6 @@ from .serializers import (
 from user_service.models import User, DeliveryAddress
 
 from config import settings
-from .tasks import send_telegram_message
 
 from .utils import create_checkout_session
 
@@ -167,13 +166,18 @@ class BasketItemViewSet(viewsets.ModelViewSet):
                 )
             basket_item.quantity += int(quantity)
             basket_item.save()
-
-        # Обновляем инвентарь
         inventory.quantity -= int(quantity)
+        for img in item.images.all():
+            basket_item.images.add(img)
+        basket_item.save()
         inventory.save()
 
         serializer = self.get_serializer(basket_item)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+
+
 
 
 @extend_schema_view(
@@ -274,13 +278,6 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
     def create_order(self, user: User, delivery_address: DeliveryAddress) -> Order:
         return Order.objects.create(user=user, delivery_address=delivery_address)
-
-
-import stripe
-import os
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
 
 
 @csrf_exempt
