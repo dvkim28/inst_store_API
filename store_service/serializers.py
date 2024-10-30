@@ -16,6 +16,8 @@ from .models import (
     ItemColor,
     ItemInventory,
     ItemDescription,
+    PaymentType,
+    DeliveryInfo,
 )
 
 
@@ -105,7 +107,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
         slug_field="color", queryset=ItemColor.objects.all()
     )
     quantity = serializers.IntegerField()
-    images = ImageItemSerializer(many=True, read_only=True, source='item.images')
+    images = ImageItemSerializer(many=True, read_only=True, source="item.images")
 
     class Meta:
         model = BasketItem
@@ -170,9 +172,16 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ["item", "price", "size", "color", "quantity"]
 
 
+class DeliveryInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryInfo
+        fields = "__all__"
+
+
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    payment_type = serializers.ChoiceField(choices=PaymentType.choices)
 
     class Meta:
         model = Order
-        fields = ["id", "user", "delivery_address", "items"]
+        fields = ["id", "user", "items", "payment_type"]

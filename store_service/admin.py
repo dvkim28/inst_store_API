@@ -9,7 +9,8 @@ from .models import (
     Order,
     OrderItem,
     ItemInventory,
-    ItemDescription, Basket,
+    ItemDescription,
+    Basket,
 )
 
 
@@ -27,7 +28,10 @@ class ImageItemInline(admin.TabularInline):
 class ItemAdmin(TranslationAdmin):
     list_display = ("name", "price", "category", "sale")
     list_filter = ("category", "sale")
-    search_fields = ("name", "brand",)
+    search_fields = (
+        "name",
+        "brand",
+    )
     inlines = [ItemDescriptionInline, ImageItemInline]  #
 
 
@@ -56,8 +60,16 @@ class OrderAdmin(admin.ModelAdmin):
 @admin.register(ItemInventory)
 class ItemInventoryAdmin(admin.ModelAdmin):
     list_display = ("item", "size", "color", "quantity")
-    list_filter = ("item", "size", "color",)
-    search_fields = ("item__name", "size__size", "color__color",)
+    list_filter = (
+        "item",
+        "size",
+        "color",
+    )
+    search_fields = (
+        "item__name",
+        "size__size",
+        "color__color",
+    )
 
 
 @admin.register(ItemColor)
@@ -76,5 +88,6 @@ class CategoryAdmin(TranslationAdmin):
 class ItemSizeAdmin(admin.ModelAdmin):
     list_display = ("size",)
     search_fields = ("size",)
+
 
 admin.site.register(Basket)

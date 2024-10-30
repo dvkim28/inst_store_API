@@ -3,7 +3,7 @@ import os
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import DecimalField, Sum
+from django.db.models import DecimalField, Sum, OneToOneField
 
 from .utils import (
     translate_and_update_category,
@@ -174,6 +174,23 @@ class BasketItem(models.Model):
         unique_together = ["basket", "item", "size", "color"]
 
 
+class DeliveryInfo(models.Model):
+    delivery_address = models.TextField(blank=True, null=True)
+    full_name = models.TextField(blank=True, null=True)
+    post_department = models.TextField(blank=True, null=True)
+    number = models.TextField(blank=True, null=True)
+    email = models.TextField(blank=True, null=True)
+    comments = models.TextField(blank=True, null=True)
+    order = OneToOneField(
+        "Order", on_delete=models.CASCADE, related_name="delivery_info"
+    )
+
+
+class PaymentType(models.TextChoices):
+    CARD = "card", "By card"
+    CASH_ON_DELIVERY = "cash_on_delivery", "Cash on delivery"
+
+
 class Order(models.Model):
     user = models.ForeignKey(
         get_user_model(), on_delete=models.CASCADE, related_name="orders"
@@ -181,6 +198,9 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
     checkout_url = models.TextField(blank=True, null=True)
+    payment_type = models.CharField(
+        max_length=20, choices=PaymentType.choices, default=PaymentType.CARD
+    )
 
     def __str__(self):
         return f"Order: {self.user}"

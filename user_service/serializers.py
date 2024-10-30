@@ -35,7 +35,6 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
-
 class ManageUserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(max_length=100)
     last_name = serializers.CharField(max_length=100)

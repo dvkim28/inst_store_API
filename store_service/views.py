@@ -1,5 +1,6 @@
 import stripe
 from django.conf import settings
+from django.db import transaction
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
@@ -30,7 +31,6 @@ from user_service.models import User
 
 from config import settings
 
-from .utils import create_checkout_session
 
 
 @extend_schema_view(
@@ -49,7 +49,6 @@ from .utils import create_checkout_session
 class ItemModelViewSet(viewsets.ModelViewSet):
     serializer_class = ItemSerializer
     queryset = Item.objects.all()
-
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -176,10 +175,6 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-
-
-
-
 @extend_schema_view(
     list=extend_schema(
         summary="List categories",
@@ -212,23 +207,58 @@ class OrderModelViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        user = self.request.user
+        return Order.objects.filter(user=user)
+
+    def get_basket_for_user(self, user):
+        return Basket.objects.filter(user=user)
+
+    @transaction.atomic
     def create(self, request, *args):
-        user = request.user
+        user = self.request.user
         basket = self.get_basket_for_user(user)
-        delivery_address = self.get_delivery_address(user)
+        delivery_info = {
+            "delivery_address": request.data.get("delivery_info.delivery_address"),
+            "full_name": request.data.get("delivery_info.full_name"),
+            "post_department": request.data.get("delivery_info.post_department"),
+            "number": request.data.get("delivery_info.number"),
+            "email": request.data.get("delivery_info.email"),
+            "comments": request.data.get("delivery_info.comments"),
+        }
+        payment_type = request.data.get("payment_type")
+        if payment_type not in ["card", "cash_on_delivery"]:
+            return Response(
+                {"error": "Invalid payment type"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
-            order = self.create_order(user, delivery_address)
+            order = self.create_order(user, delivery_address, payment_type)
             self.create_order_items(basket, order)
+
+            if payment_type == "card":
+                checkout_url = self.create_checkout_session(order.id)
+                order.checkout_url = checkout_url
+                order.save()
+
+                serializer = self.get_serializer(order)
+                response_data = serializer.data
+                response_data["checkout_url"] = checkout_url
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
+            else:
+                order.is_paid = False
+                order.save()
+
+                self.delete_basket(user)
+
+                serializer = self.get_serializer(order)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            checkout_url = create_checkout_session(order.id)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = self.get_serializer(order)
-        response_data = serializer.data
-        response_data["checkout_url"] = checkout_url
-        return Response(response_data, status=status.HTTP_201_CREATED)
 
     def create_order_items(self, basket: Basket, order: Order):
         for basket_item in basket.basket_items.all():
@@ -273,15 +303,11 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Unexpected error: {e}")
 
-    def create_order(self, user: User) -> Order:
-        return Order.objects.create(user=user)
-
 
 @csrf_exempt
 def stripe_webhook(request):
     stripe.api_key = settings.STRIPE_SECRET_KEY
     endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
-
 
     payload = request.body.decode("utf-8")
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
