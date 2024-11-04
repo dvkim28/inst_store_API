@@ -181,7 +181,8 @@ class DeliveryInfoSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     payment_type = serializers.ChoiceField(choices=PaymentType.choices)
+    delivery_info = DeliveryInfoSerializer(many=False, read_only=False)
 
     class Meta:
         model = Order
-        fields = ["id", "user", "items", "payment_type"]
+        fields = ["id", "user", "items", "payment_type", "delivery_info"]

@@ -13,8 +13,6 @@ class UserSerializer(serializers.ModelSerializer):
             "password",
             "is_staff",
             "is_email_verified",
-            "delivery_address",
-            "phone_number",
         ]
         extra_kwargs = {
             "password": {"min_length": 5, "write_only": True},
@@ -50,7 +48,6 @@ class ManageUserSerializer(serializers.ModelSerializer):
             "last_name",
             "is_staff",
             "is_email_verified",
-            "phone_number",
             "orders",
         ]
         read_only_fields = ["id", "is_staff", "is_email_verified"]

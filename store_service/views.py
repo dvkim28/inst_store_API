@@ -2,6 +2,7 @@ import stripe
 from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
@@ -15,7 +16,7 @@ from .models import (
     BasketItem,
     ItemSize,
     ItemColor,
-    ItemInventory,
+    ItemInventory, DeliveryInfo,
 )
 from .serializers import (
     BasketSerializer,
@@ -32,12 +33,11 @@ from user_service.models import User
 from config import settings
 
 
-
 @extend_schema_view(
     list=extend_schema(
         summary="List items",
         description="Retrieve a list of items, with optional filters for size,"
-        " color, brand, sale status, stock status, and ordering.",
+                    " color, brand, sale status, stock status, and ordering.",
         responses={200: ItemSerializer(many=True)},
     ),
     retrieve=extend_schema(
@@ -137,10 +137,10 @@ class BasketItemViewSet(viewsets.ModelViewSet):
                 )
 
         except (
-            Item.DoesNotExist,
-            ItemSize.DoesNotExist,
-            ItemColor.DoesNotExist,
-            ItemInventory.DoesNotExist,
+                Item.DoesNotExist,
+                ItemSize.DoesNotExist,
+                ItemColor.DoesNotExist,
+                ItemInventory.DoesNotExist,
         ):
             return Response(
                 {"error": "Item, size, color, or inventory not found"},
@@ -198,7 +198,7 @@ class CategoryModelViewSet(viewsets.ModelViewSet):
         request=OrderSerializer,
         summary="Create an order",
         description="Create a new order for the user,"
-        " including delivery address and items from the basket.",
+                    " including delivery address and items from the basket.",
         responses={201: OrderSerializer},
     ),
 )
@@ -210,9 +210,6 @@ class OrderModelViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return Order.objects.filter(user=user)
-
-    def get_basket_for_user(self, user):
-        return Basket.objects.filter(user=user)
 
     @transaction.atomic
     def create(self, request, *args):
@@ -231,10 +228,16 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             return Response(
                 {"error": "Invalid payment type"}, status=status.HTTP_400_BAD_REQUEST
             )
-
         try:
-            order = self.create_order(user, delivery_address, payment_type)
+            print("order create")
+            order = self.create_order(user, payment_type)
+            print("order created")
+            print("delivery_info create")
+            self.create_delivery_info(delivery_info, order.id)
+            print("delivery_info created")
+            print("order items create")
             self.create_order_items(basket, order)
+            print("order items created")
 
             if payment_type == "card":
                 checkout_url = self.create_checkout_session(order.id)
@@ -245,11 +248,9 @@ class OrderModelViewSet(viewsets.ModelViewSet):
                 response_data = serializer.data
                 response_data["checkout_url"] = checkout_url
                 return Response(response_data, status=status.HTTP_201_CREATED)
-
             else:
                 order.is_paid = False
                 order.save()
-
                 self.delete_basket(user)
 
                 serializer = self.get_serializer(order)
@@ -258,7 +259,64 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "An unexpected error occurred: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def create_delivery_info(self, delivery_info: dict, order_id: int) -> DeliveryInfo:
+        try:
+            order = Order.objects.get(id=order_id)
+            print(f"Order found: {order}")
+            delivery_info_obj = DeliveryInfo.objects.create(
+                delivery_address=delivery_info["delivery_address"],
+                full_name=delivery_info["full_name"],
+                post_department=delivery_info["post_department"],
+                number=delivery_info["number"],
+                email=delivery_info["email"],
+                comments=delivery_info["comments"],
+                order=order,
+            )
+            return delivery_info_obj
+        except Order.DoesNotExist:
+            print(f"Order with id {order_id} does not exist.")
+            raise
+        except Exception as e:
+            print(f"An error occurred while creating DeliveryInfo: {str(e)}")
+            raise
+
+    def create_order(self, user, payment_type):
+        return Order.objects.create(user=user, payment_type=payment_type)
+
+    def create_checkout_session(self, order_id):
+        try:
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            order = Order.objects.get(id=order_id)
+            items = order.items.all()
+
+            line_items = []
+            for item in items:
+                line_items.append({
+                    'price_data': {
+                        'currency': 'usd',
+                        'product_data': {
+                            'name': item.item.name,
+                        },
+                        'unit_amount': int(item.price * 100),
+                    },
+                    'quantity': item.quantity,
+                })
+
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=line_items,
+                mode='payment',
+                success_url='https://inst-store-api.onrender.com/success.html',
+                cancel_url='https://inst-store-api.onrender.com/cancel.html',
+                metadata={
+                    'order_id': order_id,
+                }
+            )
+            return checkout_session.url
+        except Exception as e:
+            raise ValueError(f"Failed to create checkout session: {str(e)}")
 
     def create_order_items(self, basket: Basket, order: Order):
         for basket_item in basket.basket_items.all():
@@ -267,8 +325,6 @@ class OrderModelViewSet(viewsets.ModelViewSet):
                 item=basket_item.item, size=basket_item.size, color=basket_item.color
             )
             if inventory.quantity < basket_item.quantity:
-                print(inventory.quantity)
-                print(basket_item.quantity)
                 raise ValueError("Not enough items in stock")
 
             inventory.quantity -= basket_item.quantity
@@ -284,24 +340,17 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             )
 
     def get_basket_for_user(self, user: User) -> Basket:
-        basket = Basket.objects.get(user=user)
-        return basket
+        return Basket.objects.get(user=user)
 
     @staticmethod
     def delete_basket(user) -> None:
         try:
             basket = Basket.objects.get(user=user)
-            print(f"Basket found: {basket}")
-            try:
-                basket.delete()
-                print("Basket deleted successfully")
-            except Exception as e:
-                print(f"Error during basket deletion: {e}")
-
+            basket.delete()
         except Basket.DoesNotExist:
             print(f"No basket found for user {user}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            print(f"Unexpected error during basket deletion: {e}")
 
 
 @csrf_exempt
