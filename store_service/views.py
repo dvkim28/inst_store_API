@@ -109,6 +109,9 @@ class BasketModelViewSet(viewsets.ModelViewSet):
             return BasketSerializer
         return BasketSerializer
 
+    def get_queryset(self):
+        return Basket.objects.filter(user=self.request.user)
+
 
 class BasketItemViewSet(viewsets.ModelViewSet):
     serializer_class = BasketItemSerializer
