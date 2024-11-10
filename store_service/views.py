@@ -227,10 +227,6 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             "comments": request.data.get("delivery_info.comments"),
         }
         payment_type = request.data.get("payment_type")
-        if payment_type not in ["card", "cash_on_delivery"]:
-            return Response(
-                {"error": "Invalid payment type"}, status=status.HTTP_400_BAD_REQUEST
-            )
         try:
             print("order create")
             order = self.create_order(user, payment_type)
@@ -241,7 +237,6 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             print("order items create")
             self.create_order_items(basket, order)
             print("order items created")
-
             if payment_type == "card":
                 checkout_url = self.create_checkout_session(order.id)
                 order.checkout_url = checkout_url
