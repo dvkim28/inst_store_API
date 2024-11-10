@@ -199,7 +199,7 @@ class Order(models.Model):
     is_paid = models.BooleanField(default=False)
     checkout_url = models.TextField(blank=True, null=True)
     payment_type = models.CharField(
-        max_length=20, choices=PaymentType.choices, default=PaymentType.CARD
+        max_length=20, choices=PaymentType.choices, default=PaymentType.CARD, blank=True, null=True
     )
 
     def __str__(self):
