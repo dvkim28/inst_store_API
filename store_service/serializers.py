@@ -100,11 +100,12 @@ class BasketItemSerializer(serializers.ModelSerializer):
         model = BasketItem
         fields = ["id", "item", "size", "color", "quantity", "images"]
 
+
     def validate(self, data):
-        item = data["item"]
-        size = data["size"]
-        color = data["color"]
-        quantity = data["quantity"]
+        item = data.get("item", self.instance.item if self.instance else None)
+        size = data.get("size", self.instance.size if self.instance else None)
+        color = data.get("color", self.instance.color if self.instance else None)
+        quantity = data.get("quantity", self.instance.quantity if self.instance else None)
 
         try:
             inventory = ItemInventory.objects.get(item=item, size=size, color=color)
@@ -120,6 +121,16 @@ class BasketItemSerializer(serializers.ModelSerializer):
 
 
 class BasketItemForBasketSerializer(serializers.ModelSerializer):
+    item = serializers.SlugRelatedField(slug_field="name", read_only=True)
+    size = serializers.SlugRelatedField(slug_field="size", queryset=ItemSize.objects.all())
+    color = serializers.SlugRelatedField(slug_field="color", queryset=ItemColor.objects.all())
+    quantity = serializers.IntegerField()
+    images = serializers.SerializerMethodField()
+
+    def get_images(self, obj):
+        return [image.image.url for image in obj.images.all()]
+
+
     class Meta:
         model = BasketItem
         fields = ["id", "item", "size", "color", "price", "quantity", "images"]
