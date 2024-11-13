@@ -29,16 +29,18 @@ def send_verification_email(user):
 
 
 def send_reset_password_via_email(mail:str, reset_password_link:str):
+
     reset_link = reset_password_link
     message = (
         f"Привет!"
         f"Пожалуйста, перейдите по ссылке"
         f" для подтверждения вашей почты:{reset_link}"
     )
+
     send_mail(
         f"Reset password for {mail}",
         message,
         "d.villarionovich@gmail.com",
-        mail,
+        [mail],
         fail_silently=False,
     )

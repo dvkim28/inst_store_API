@@ -69,9 +69,10 @@ class RequestPasswordReset(generics.GenericAPIView):
     serializer_class = ResetPasswordRequestSerializer
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
+        url = os.environ.get("BASE_URL")
+        self.serializer_class(data=request.data)
         email = request.data['email']
-        user = User.objects.filter(email__iexact=email).first()
+        user = get_user_model().objects.filter(email__iexact=email).first()
 
         if user:
             token_generator = PasswordResetTokenGenerator()
@@ -79,7 +80,7 @@ class RequestPasswordReset(generics.GenericAPIView):
             reset = PasswordReset(email=email, token=token)
             reset.save()
 
-            reset_url = f"{os.environ['PASSWORD_RESET_BASE_URL']}/{token}"
+            reset_url = f"{url}api/v1/users/password_recovery/?token={token}"
 
             send_reset_password_via_email(email, reset_url)
 
