@@ -209,12 +209,8 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
     checkout_url = models.TextField(blank=True, null=True)
-    payment_type = models.CharField(
-        max_length=20, choices=PaymentType.choices, blank=True, null=True
-    )
-    post_department = models.ForeignKey(
-        to=PostDepartment, on_delete=models.CASCADE, blank=True, null=True
-    )
+    payment_type = models.CharField(max_length=20, choices=PaymentType.choices)
+    post_department = models.ForeignKey(to=PostDepartment, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Order: {self.user}"
