@@ -1,17 +1,9 @@
 from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
-from .models import (
-    Category,
-    ImageItem,
-    Item,
-    ItemColor,
-    ItemSize,
-    Order,
-    OrderItem,
-    ItemInventory,
-    ItemDescription,
-    Basket,
-)
+
+from .models import (Basket, Category, ImageItem, Item, ItemColor,
+                     ItemDescription, ItemInventory, ItemSize, Order,
+                     OrderItem)
 
 
 class ItemDescriptionInline(admin.TabularInline):

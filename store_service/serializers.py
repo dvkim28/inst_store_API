@@ -1,24 +1,11 @@
 from rest_framework import serializers
 
 from user_service.serializers import UserSerializer
-from django.utils.translation import get_language
 
-
-from .models import (
-    Basket,
-    Category,
-    ImageItem,
-    Item,
-    Order,
-    OrderItem,
-    BasketItem,
-    ItemSize,
-    ItemColor,
-    ItemInventory,
-    ItemDescription,
-    PaymentType,
-    DeliveryInfo,
-)
+from .models import (Basket, BasketItem, Category, DeliveryInfo, DeliveryType,
+                     ImageItem, Item, ItemColor, ItemDescription,
+                     ItemInventory, ItemSize, Order, OrderItem, PaymentType,
+                     PostDepartment)
 
 
 class AdditionalInfoSerializer(serializers.Serializer):
@@ -132,9 +119,15 @@ class BasketItemSerializer(serializers.ModelSerializer):
         return data
 
 
+class BasketItemForBasketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BasketItem
+        fields = ["id", "item", "size", "color", "price", "quantity", "images"]
+
+
 class BasketSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
-    basket_items = BasketItemSerializer(many=True, read_only=True)
+    basket_items = BasketItemForBasketSerializer(many=True, read_only=True)
 
     class Meta:
         model = Basket
@@ -172,17 +165,33 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ["item", "price", "size", "color", "quantity"]
 
 
+class PostDepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostDepartment
+        fields = "__all__"
+
+
 class DeliveryInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeliveryInfo
-        fields = "__all__"
+        fields = ("full_name", "number", "email", "comments")
 
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     payment_type = serializers.ChoiceField(choices=PaymentType.choices)
+    delivery_type = serializers.ChoiceField(choices=DeliveryType.choices)
     delivery_info = DeliveryInfoSerializer(many=False, read_only=False)
+    post_department = PostDepartmentSerializer(many=False, read_only=False)
 
     class Meta:
         model = Order
-        fields = ["id", "user", "items", "payment_type", "delivery_info"]
+        fields = [
+            "id",
+            "user",
+            "items",
+            "payment_type",
+            "delivery_info",
+            "delivery_type",
+            "post_department",
+        ]

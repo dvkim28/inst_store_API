@@ -1,5 +1,6 @@
-from modeltranslation.translator import register, TranslationOptions
-from .models import Item, Category, ItemDescription, ItemSize, ItemColor
+from modeltranslation.translator import TranslationOptions, register
+
+from .models import Category, Item, ItemColor, ItemDescription, ItemSize
 
 
 @register(Item)

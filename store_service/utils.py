@@ -1,9 +1,11 @@
 # tasks.py
 import os
+
 import stripe
 from celery import shared_task
 from deep_translator import GoogleTranslator
 from django.apps import apps
+
 from config import settings
 
 
@@ -12,7 +14,8 @@ def create_checkout_session(order_id: int) -> str:
 
     stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
     if not stripe.api_key:
-        raise ValueError("Stripe secret key is not set in environment variables")
+        raise ValueError("Stripe secret key "
+                         "is not set in environment variables")
 
     try:
         order = Order.objects.get(id=order_id)

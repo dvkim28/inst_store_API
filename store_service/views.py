@@ -4,40 +4,25 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets, status, permissions
-from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from .models import (
-    Basket,
-    Category,
-    Item,
-    Order,
-    OrderItem,
-    BasketItem,
-    ItemSize,
-    ItemColor,
-    ItemInventory, DeliveryInfo,
-)
-from .serializers import (
-    BasketSerializer,
-    CategorySerializer,
-    ItemDetailSerializer,
-    ItemSerializer,
-    OrderSerializer,
-    BasketItemSerializer,
-    CategoryDetailSerializer,
-)
+from rest_framework import permissions, status, viewsets
+from rest_framework.response import Response
 
 from user_service.models import User
 
-from config import settings
+from .models import (Basket, BasketItem, Category, DeliveryInfo, Item,
+                     ItemColor, ItemInventory, ItemSize, Order, OrderItem)
+from .serializers import (BasketItemSerializer, BasketSerializer,
+                          CategoryDetailSerializer, CategorySerializer,
+                          ItemDetailSerializer, ItemSerializer,
+                          OrderSerializer)
 
 
 @extend_schema_view(
     list=extend_schema(
         summary="List items",
         description="Retrieve a list of items, with optional filters for size,"
-                    " color, brand, sale status, stock status, and ordering.",
+        " color, brand, sale status, stock status, and ordering.",
         responses={200: ItemSerializer(many=True)},
     ),
     retrieve=extend_schema(
@@ -88,7 +73,9 @@ class ItemModelViewSet(viewsets.ModelViewSet):
 @extend_schema_view(
     create=extend_schema(
         summary="Create a basket",
-        description="Create a new basket " "for the current user and add items to it.",
+        description=""
+                    "Create a new basket for the "
+                    "current user and add items to it.",
         responses={201: BasketSerializer},
     ),
 )
@@ -126,24 +113,28 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         size = request.data.get("size")
         color = request.data.get("color")
         quantity = request.data.get("quantity", 1)
-        print(f"item: {item}, size: {size}, color: {color}, quantity: {quantity}")
+        item_main = Item.objects.get(name=item)
+        print(item_main.id)
         try:
             item = Item.objects.get(name=item)
             size = ItemSize.objects.get(size=size)
             color = ItemColor.objects.get(color=color)
-            inventory = ItemInventory.objects.get(item=item, size=size, color=color)
+            inventory = ItemInventory.objects.get(
+                item=item,
+                size=size,
+                color=color)
 
             if inventory.quantity < int(quantity):
                 return Response(
-                    {"error": "Not enough items in stock 134"},
+                    {"error": "Not enough items in stock"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
         except (
-                Item.DoesNotExist,
-                ItemSize.DoesNotExist,
-                ItemColor.DoesNotExist,
-                ItemInventory.DoesNotExist,
+            Item.DoesNotExist,
+            ItemSize.DoesNotExist,
+            ItemColor.DoesNotExist,
+            ItemInventory.DoesNotExist,
         ):
             return Response(
                 {"error": "Item, size, color, or inventory not found"},
@@ -157,8 +148,12 @@ class BasketItemViewSet(viewsets.ModelViewSet):
             item=item,
             size=size,
             color=color,
-            defaults={"quantity": quantity},
+            price=item_main.price,
+            defaults={"price": item_main.price, "quantity": quantity},
         )
+        if not created:
+            basket_item.quantity += int(quantity)
+            basket_item.save()
 
         if not created:
             if inventory.quantity < basket_item.quantity:
@@ -201,7 +196,7 @@ class CategoryModelViewSet(viewsets.ModelViewSet):
         request=OrderSerializer,
         summary="Create an order",
         description="Create a new order for the user,"
-                    " including delivery address and items from the basket.",
+        " including delivery address and items from the basket.",
         responses={201: OrderSerializer},
     ),
 )
@@ -219,9 +214,11 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         user = self.request.user
         basket = self.get_basket_for_user(user)
         delivery_info = {
-            "delivery_address": request.data.get("delivery_info.delivery_address"),
+            "delivery_address": request.data.
+            get("delivery_info.delivery_address"),
             "full_name": request.data.get("delivery_info.full_name"),
-            "post_department": request.data.get("delivery_info.post_department"),
+            "post_department": request.data.
+            get("delivery_info.post_department"),
             "number": request.data.get("delivery_info.number"),
             "email": request.data.get("delivery_info.email"),
             "comments": request.data.get("delivery_info.comments"),
@@ -252,14 +249,24 @@ class OrderModelViewSet(viewsets.ModelViewSet):
                 self.delete_basket(user)
 
                 serializer = self.get_serializer(order)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED)
 
         except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"error": "An unexpected error occurred: " + str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "An unexpected error occurred: " + str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-    def create_delivery_info(self, delivery_info: dict, order_id: int) -> DeliveryInfo:
+    def create_delivery_info(
+            self,
+            delivery_info: dict,
+            order_id: int) -> DeliveryInfo:
         try:
             order = Order.objects.get(id=order_id)
             print(f"Order found: {order}")
@@ -291,26 +298,28 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
             line_items = []
             for item in items:
-                line_items.append({
-                    'price_data': {
-                        'currency': 'usd',
-                        'product_data': {
-                            'name': item.item.name,
+                line_items.append(
+                    {
+                        "price_data": {
+                            "currency": "usd",
+                            "product_data": {
+                                "name": item.item.name,
+                            },
+                            "unit_amount": int(item.price * 100),
                         },
-                        'unit_amount': int(item.price * 100),
-                    },
-                    'quantity': item.quantity,
-                })
+                        "quantity": item.quantity,
+                    }
+                )
 
             checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
+                payment_method_types=["card"],
                 line_items=line_items,
-                mode='payment',
-                success_url='https://inst-store-api.onrender.com/success.html',
-                cancel_url='https://inst-store-api.onrender.com/cancel.html',
+                mode="payment",
+                success_url="https://inst-store-api.onrender.com/success.html",
+                cancel_url="https://inst-store-api.onrender.com/cancel.html",
                 metadata={
-                    'order_id': order_id,
-                }
+                    "order_id": order_id,
+                },
             )
             return checkout_session.url
         except Exception as e:
@@ -320,7 +329,9 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         for basket_item in basket.basket_items.all():
             item = Item.objects.get(id=basket_item.item.id)
             inventory = ItemInventory.objects.get(
-                item=basket_item.item, size=basket_item.size, color=basket_item.color
+                item=basket_item.item,
+                size=basket_item.size,
+                color=basket_item.color
             )
             if inventory.quantity < basket_item.quantity:
                 raise ValueError("Not enough items in stock")
@@ -360,12 +371,14 @@ def stripe_webhook(request):
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-    except ValueError as e:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError:
         return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError as e:
+    except stripe.error.SignatureVerificationError:
         return HttpResponse(status=400)
-    except Exception as e:
+    except Exception:
         return HttpResponse(status=500)
 
     if event["type"] == "checkout.session.completed":
