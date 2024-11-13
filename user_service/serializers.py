@@ -65,3 +65,15 @@ class ManageUserSerializer(serializers.ModelSerializer):
         )
         instance.save()
         return instance
+
+
+class ResetPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.RegexField(
+        regex=r'^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+        write_only=True,
+        error_messages={'invalid': ('Password must be at least 8 characters long with at least one capital letter and symbol')})
+    create_the_confirm_password = serializers.CharField(write_only=True, required=True)
