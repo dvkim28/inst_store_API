@@ -32,16 +32,14 @@ class Category(models.Model):
     #         translate_and_update_category.delay(self.pk)
 
 
-def item_upload_path(instance, filename) -> str:
-    _, ext = os.path.splitext(filename)
-    return os.path.join("items", f"{instance.id}{ext}")
+
 
 
 class ImageItem(models.Model):
     item = models.ForeignKey("Item",
                              on_delete=models.CASCADE,
                              related_name="images")
-    image = models.ImageField(upload_to=item_upload_path,
+    image = models.ImageField(upload_to="item_upload_path",
                               null=True,
                               blank=True)
 
@@ -96,6 +94,9 @@ class Item(models.Model):
     def is_in_stock(self):
         return self.total_stock() > 0
 
+def item_upload_path(instance, filename) -> str:
+    _, ext = os.path.splitext(filename)
+    return os.path.join("items", f"{instance.id}{ext}")
 
 class ItemSize(models.Model):
     size = models.CharField(max_length=100)
