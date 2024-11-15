@@ -1,16 +1,21 @@
+from django.utils import timezone
+import datetime
+
 import os
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import generics, permissions, status, viewsets
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from user_service.models import PasswordReset
-from user_service.serializers import ManageUserSerializer, UserSerializer, ResetPasswordRequestSerializer, \
-    ResetPasswordSerializer
-from user_service.utils import send_reset_password_via_email
+from user_service.serializers import (
+    ManageUserSerializer,
+    UserSerializer,
+    ResetPasswordRequestSerializer,
+    ResetPasswordSerializer,
+)
+from user_service.utils import send_recovery_email
 
 
 class UserModelView(viewsets.ModelViewSet):
@@ -64,59 +69,73 @@ class VerifyEmailView(generics.GenericAPIView):
         )
 
 
-class RequestPasswordReset(generics.GenericAPIView):
-    permission_classes = [AllowAny]
+class ResetPasswordView(generics.GenericAPIView):
     serializer_class = ResetPasswordRequestSerializer
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        url = os.environ.get("BASE_URL")
-        self.serializer_class(data=request.data)
-        email = request.data['email']
-        user = get_user_model().objects.filter(email__iexact=email).first()
-
-        if user:
-            token_generator = PasswordResetTokenGenerator()
-            token = token_generator.make_token(user)
-            reset = PasswordReset(email=email, token=token)
-            reset.save()
-
-            reset_url = f"{url}api/v1/users/password_recovery/?token={token}"
-
-            send_reset_password_via_email(email, reset_url)
-
-            return Response({'success': 'We have sent you a link to reset your password'}, status=status.HTTP_200_OK)
-        else:
-            return Response({"error": "User with credentials not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ResetPasswordRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get("email")
+            user = get_user_model().objects.get(email=email)
+            print(user.id)
+            if user:
+                send_recovery_email(email)
+                return Response(
+                    {"message": "Password recovery email sent successfully."},
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    {"message": "There is no such user in the system."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
 
-class ResetPassword(generics.GenericAPIView):
+class PasswordResetConfirm(generics.GenericAPIView):
+    permission_classes = (permissions.AllowAny,)
     serializer_class = ResetPasswordSerializer
-    permission_classes = []
 
-    def post(self, request, token):
+    def post(self, request):
+        token = request.GET.get("token")
+        today = timezone.now()
+
+        if not token:
+            return Response(
+                {"message": "Token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            password_reset = PasswordReset.objects.get(token=token)
+        except PasswordReset.DoesNotExist:
+            return Response(
+                {"message": "Invalid or expired token."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if today - password_reset.created_at > datetime.timedelta(hours=1):
+            return Response(
+                {"message": "Expired token."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
+        if serializer.is_valid():
+            new_password = serializer.validated_data["new_password"]
 
-        new_password = data['new_password']
-        confirm_password = data['confirm_password']
+            try:
+                user = get_user_model().objects.get(email=password_reset.email)
+            except ObjectDoesNotExist:
+                return Response(
+                    {"message": "User not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
-        if new_password != confirm_password:
-            return Response({"error": "Passwords do not match"}, status=400)
-
-        reset_obj = PasswordReset.objects.filter(token=token).first()
-
-        if not reset_obj:
-            return Response({'error': 'Invalid token'}, status=400)
-
-        user = User.objects.filter(email=reset_obj.email).first()
-
-        if user:
-            user.set_password(request.data['new_password'])
+            user.set_password(new_password)
             user.save()
-
-            reset_obj.delete()
-
-            return Response({'success': 'Password updated'})
+            password_reset.delete()
+            return Response(
+                {"message": "Password reset successful."}, status=status.HTTP_200_OK
+            )
         else:
-            return Response({'error': 'No user found'}, status=404)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

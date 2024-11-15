@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from user_service.utils import send_verification_email
@@ -72,8 +73,29 @@ class ResetPasswordRequestSerializer(serializers.Serializer):
 
 
 class ResetPasswordSerializer(serializers.Serializer):
-    new_password = serializers.RegexField(
-        regex=r'^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
+    new_password = serializers.CharField(
         write_only=True,
-        error_messages={'invalid': ('Password must be at least 8 characters long with at least one capital letter and symbol')})
-    create_the_confirm_password = serializers.CharField(write_only=True, required=True)
+        min_length=8,
+        error_messages={
+            "min_length": "Password must be at least 8 characters long.",
+        },
+    )
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        try:
+            validate_password(value)
+        except serializers.ValidationError as e:
+            raise serializers.ValidationError(
+                "Password must be at least 8 characters long with at least one capital letter and symbol."
+            )
+        return value
+
+    def validate(self, data):
+        new_password = data.get("new_password")
+        confirm_password = data.get("confirm_password")
+
+        if new_password != confirm_password:
+            raise serializers.ValidationError("The two password fields must match.")
+
+        return data

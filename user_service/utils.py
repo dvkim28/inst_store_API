@@ -1,7 +1,10 @@
+import os
 import urllib.parse
 
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
+
+from user_service.models import PasswordReset
 
 
 def send_verification_email(user):
@@ -28,17 +31,23 @@ def send_verification_email(user):
     )
 
 
-def send_reset_password_via_email(mail:str, reset_password_link:str):
+def send_recovery_email(mail: str) -> None:
+    token = get_random_string(length=32)
+    pass_reset = PasswordReset.objects.create(email=mail, token=token)
+    pass_reset.save()
+    BASE_URL = os.environ.get("BASE_URL")
 
-    reset_link = reset_password_link
+    verification_link = f"{BASE_URL}password_reset_confirm/?token={token}"
     message = (
-        f"Привет!"
-        f"Пожалуйста, перейдите по ссылке"
-        f" для подтверждения вашей почты:{reset_link}"
+        f"Hello!\n\n"
+        f"We received a request to reset the password for your account. "
+        f"Please click the following link to set a new password:\n\n"
+        f"{verification_link}\n\n"
+        f"If you did not request a password reset, please ignore this message."
     )
 
     send_mail(
-        f"Reset password for {mail}",
+        "Password recovery",
         message,
         "d.villarionovich@gmail.com",
         [mail],
