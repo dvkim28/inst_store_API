@@ -5,9 +5,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import DecimalField, OneToOneField, Sum
 
-from .utils import (translate_and_update_category,
-                    translate_and_update_description,
-                    translate_and_update_item)
+from .utils import (
+    translate_and_update_category,
+    translate_and_update_description,
+    translate_and_update_item,
+)
 
 
 class Category(models.Model):
@@ -32,16 +34,9 @@ class Category(models.Model):
     #         translate_and_update_category.delay(self.pk)
 
 
-
-
-
 class ImageItem(models.Model):
-    item = models.ForeignKey("Item",
-                             on_delete=models.CASCADE,
-                             related_name="images")
-    image = models.ImageField(upload_to="item_upload_path",
-                              null=True,
-                              blank=True)
+    item = models.ForeignKey("Item", on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="item_upload_path", null=True, blank=True)
 
 
 class Item(models.Model):
@@ -94,9 +89,11 @@ class Item(models.Model):
     def is_in_stock(self):
         return self.total_stock() > 0
 
+
 def item_upload_path(instance, filename) -> str:
     _, ext = os.path.splitext(filename)
     return os.path.join("items", f"{instance.id}{ext}")
+
 
 class ItemSize(models.Model):
     size = models.CharField(max_length=100)

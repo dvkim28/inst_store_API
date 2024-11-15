@@ -2,10 +2,23 @@ from rest_framework import serializers
 
 from user_service.serializers import UserSerializer
 
-from .models import (Basket, BasketItem, Category, DeliveryInfo, DeliveryType,
-                     ImageItem, Item, ItemColor, ItemDescription,
-                     ItemInventory, ItemSize, Order, OrderItem, PaymentType,
-                     PostDepartment)
+from .models import (
+    Basket,
+    BasketItem,
+    Category,
+    DeliveryInfo,
+    DeliveryType,
+    ImageItem,
+    Item,
+    ItemColor,
+    ItemDescription,
+    ItemInventory,
+    ItemSize,
+    Order,
+    OrderItem,
+    PaymentType,
+    PostDepartment,
+)
 
 
 class AdditionalInfoSerializer(serializers.Serializer):
@@ -99,12 +112,13 @@ class BasketItemSerializer(serializers.ModelSerializer):
         model = BasketItem
         fields = ["id", "item", "size", "color", "quantity", "images"]
 
-
     def validate(self, data):
         item = data.get("item", self.instance.item if self.instance else None)
         size = data.get("size", self.instance.size if self.instance else None)
         color = data.get("color", self.instance.color if self.instance else None)
-        quantity = data.get("quantity", self.instance.quantity if self.instance else None)
+        quantity = data.get(
+            "quantity", self.instance.quantity if self.instance else None
+        )
 
         try:
             inventory = ItemInventory.objects.get(item=item, size=size, color=color)
@@ -121,11 +135,14 @@ class BasketItemSerializer(serializers.ModelSerializer):
 
 class BasketItemForBasketSerializer(serializers.ModelSerializer):
     item = serializers.SlugRelatedField(slug_field="name", read_only=True)
-    size = serializers.SlugRelatedField(slug_field="size", queryset=ItemSize.objects.all())
-    color = serializers.SlugRelatedField(slug_field="color", queryset=ItemColor.objects.all())
+    size = serializers.SlugRelatedField(
+        slug_field="size", queryset=ItemSize.objects.all()
+    )
+    color = serializers.SlugRelatedField(
+        slug_field="color", queryset=ItemColor.objects.all()
+    )
     quantity = serializers.IntegerField()
     images = ImageItemSerializer(many=True, read_only=True, source="item.images")
-
 
     class Meta:
         model = BasketItem
@@ -187,7 +204,7 @@ class DeliveryInfoSerializer(serializers.ModelSerializer):
 class DeliveryInfoDetailSerializer(DeliveryInfoSerializer):
     class Meta:
         model = DeliveryInfo
-        fields = ("__all__")
+        fields = "__all__"
 
 
 class OrderSerializer(serializers.ModelSerializer):

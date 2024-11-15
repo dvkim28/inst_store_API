@@ -10,12 +10,27 @@ from rest_framework.response import Response
 
 from user_service.models import User
 
-from .models import (Basket, BasketItem, Category, DeliveryInfo, Item,
-                     ItemColor, ItemInventory, ItemSize, Order, OrderItem)
-from .serializers import (BasketItemSerializer, BasketSerializer,
-                          CategoryDetailSerializer, CategorySerializer,
-                          ItemDetailSerializer, ItemSerializer,
-                          OrderSerializer)
+from .models import (
+    Basket,
+    BasketItem,
+    Category,
+    DeliveryInfo,
+    Item,
+    ItemColor,
+    ItemInventory,
+    ItemSize,
+    Order,
+    OrderItem,
+)
+from .serializers import (
+    BasketItemSerializer,
+    BasketSerializer,
+    CategoryDetailSerializer,
+    CategorySerializer,
+    ItemDetailSerializer,
+    ItemSerializer,
+    OrderSerializer,
+)
 
 
 @extend_schema_view(
@@ -74,8 +89,8 @@ class ItemModelViewSet(viewsets.ModelViewSet):
     create=extend_schema(
         summary="Create a basket",
         description=""
-                    "Create a new basket for the "
-                    "current user and add items to it.",
+        "Create a new basket for the "
+        "current user and add items to it.",
         responses={201: BasketSerializer},
     ),
 )
@@ -119,10 +134,7 @@ class BasketItemViewSet(viewsets.ModelViewSet):
             item = Item.objects.get(name=item)
             size = ItemSize.objects.get(size=size)
             color = ItemColor.objects.get(color=color)
-            inventory = ItemInventory.objects.get(
-                item=item,
-                size=size,
-                color=color)
+            inventory = ItemInventory.objects.get(item=item, size=size, color=color)
 
             if inventory.quantity < int(quantity):
                 return Response(
@@ -214,11 +226,9 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         user = self.request.user
         basket = self.get_basket_for_user(user)
         delivery_info = {
-            "delivery_address": request.data.
-            get("delivery_info.delivery_address"),
+            "delivery_address": request.data.get("delivery_info.delivery_address"),
             "full_name": request.data.get("delivery_info.full_name"),
-            "post_department": request.data.
-            get("delivery_info.post_department"),
+            "post_department": request.data.get("delivery_info.post_department"),
             "number": request.data.get("delivery_info.number"),
             "email": request.data.get("delivery_info.email"),
             "comments": request.data.get("delivery_info.comments"),
@@ -249,24 +259,17 @@ class OrderModelViewSet(viewsets.ModelViewSet):
                 self.delete_basket(user)
 
                 serializer = self.get_serializer(order)
-                return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except ValueError as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
                 {"error": "An unexpected error occurred: " + str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    def create_delivery_info(
-            self,
-            delivery_info: dict,
-            order_id: int) -> DeliveryInfo:
+    def create_delivery_info(self, delivery_info: dict, order_id: int) -> DeliveryInfo:
         try:
             order = Order.objects.get(id=order_id)
             print(f"Order found: {order}")
@@ -329,9 +332,7 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         for basket_item in basket.basket_items.all():
             item = Item.objects.get(id=basket_item.item.id)
             inventory = ItemInventory.objects.get(
-                item=basket_item.item,
-                size=basket_item.size,
-                color=basket_item.color
+                item=basket_item.item, size=basket_item.size, color=basket_item.color
             )
             if inventory.quantity < basket_item.quantity:
                 raise ValueError("Not enough items in stock")
@@ -371,9 +372,7 @@ def stripe_webhook(request):
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
 
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
     except ValueError:
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError:

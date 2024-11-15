@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     "user_service",
     "drf_spectacular",
     "store_service",
-    "dj_rest_auth",
 ]
 
 MIDDLEWARE = [
