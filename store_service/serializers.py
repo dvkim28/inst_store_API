@@ -94,7 +94,6 @@ class BasketItemSerializer(serializers.ModelSerializer):
         slug_field="color", queryset=ItemColor.objects.all()
     )
     quantity = serializers.IntegerField()
-    images = ImageItemSerializer(many=True, read_only=True, source="item.images")
 
     class Meta:
         model = BasketItem
@@ -125,10 +124,7 @@ class BasketItemForBasketSerializer(serializers.ModelSerializer):
     size = serializers.SlugRelatedField(slug_field="size", queryset=ItemSize.objects.all())
     color = serializers.SlugRelatedField(slug_field="color", queryset=ItemColor.objects.all())
     quantity = serializers.IntegerField()
-    images = serializers.SerializerMethodField()
-
-    def get_images(self, obj):
-        return [image.image.url for image in obj.images.all()]
+    images = ImageItemSerializer(many=True, read_only=True, source="item.images")
 
 
     class Meta:
