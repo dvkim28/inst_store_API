@@ -37,7 +37,7 @@ def send_recovery_email(mail: str) -> None:
     pass_reset.save()
     BASE_URL = os.environ.get("BASE_URL")
 
-    verification_link = f"{BASE_URL}password_reset_confirm/?token={token}"
+    verification_link = f"{BASE_URL}#/confirm/{token}"
     message = (
         f"Hello!\n\n"
         f"We received a request to reset the password for your account. "
