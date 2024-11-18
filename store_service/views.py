@@ -20,7 +20,7 @@ from .models import (
     ItemInventory,
     ItemSize,
     Order,
-    OrderItem,
+    OrderItem, PostDepartment,
 )
 from .serializers import (
     BasketItemSerializer,
@@ -37,7 +37,7 @@ from .serializers import (
     list=extend_schema(
         summary="List items",
         description="Retrieve a list of items, with optional filters for size,"
-        " color, brand, sale status, stock status, and ordering.",
+                    " color, brand, sale status, stock status, and ordering.",
         responses={200: ItemSerializer(many=True)},
     ),
     retrieve=extend_schema(
@@ -89,8 +89,8 @@ class ItemModelViewSet(viewsets.ModelViewSet):
     create=extend_schema(
         summary="Create a basket",
         description=""
-        "Create a new basket for the "
-        "current user and add items to it.",
+                    "Create a new basket for the "
+                    "current user and add items to it.",
         responses={201: BasketSerializer},
     ),
 )
@@ -143,10 +143,10 @@ class BasketItemViewSet(viewsets.ModelViewSet):
                 )
 
         except (
-            Item.DoesNotExist,
-            ItemSize.DoesNotExist,
-            ItemColor.DoesNotExist,
-            ItemInventory.DoesNotExist,
+                Item.DoesNotExist,
+                ItemSize.DoesNotExist,
+                ItemColor.DoesNotExist,
+                ItemInventory.DoesNotExist,
         ):
             return Response(
                 {"error": "Item, size, color, or inventory not found"},
@@ -208,7 +208,7 @@ class CategoryModelViewSet(viewsets.ModelViewSet):
         request=OrderSerializer,
         summary="Create an order",
         description="Create a new order for the user,"
-        " including delivery address and items from the basket.",
+                    " including delivery address and items from the basket.",
         responses={201: OrderSerializer},
     ),
 )
@@ -222,29 +222,48 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         return Order.objects.filter(user=user)
 
     @transaction.atomic
-    def create(self, request, *args):
+    def create(self, request, *args, **kwargs):
         user = self.request.user
         basket = self.get_basket_for_user(user)
+
+        # Извлечение delivery_info
         delivery_info = {
-            "delivery_address": request.data.get("delivery_info.delivery_address"),
-            "full_name": request.data.get("delivery_info.full_name"),
-            "post_department": request.data.get("delivery_info.post_department"),
-            "number": request.data.get("delivery_info.number"),
-            "email": request.data.get("delivery_info.email"),
-            "comments": request.data.get("delivery_info.comments"),
+            "full_name": request.data.get("delivery_info.full_name", ""),
+            "number": request.data.get("delivery_info.number", ""),
+            "email": request.data.get("delivery_info.email", ""),
+            "comments": request.data.get("delivery_info.comments", ""),
+            "delivery_type": request.data.get("delivery_info.delivery_type", ""),
         }
-        payment_type = request.data.get("payment_type")
+
+        # Извлечение post_department
+        post_department = {
+            "city": request.data.get("post_department.city", ""),
+            "state": request.data.get("post_department.state", ""),
+            "address": request.data.get("post_department.address", ""),
+        }
+
+        # Проверка обязательных полей
+        if not delivery_info["full_name"] or not delivery_info["number"]:
+            return Response({"error": "Delivery information is incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not post_department["city"] or not post_department["state"] or not post_department["address"]:
+            return Response({"error": "Post department data is required"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            print("order create")
-            order = self.create_order(user, payment_type)
-            print("order created")
-            print("delivery_info create")
+            # Создание PostDepartment
+            p_data = self.create_post_department(post_department)
+
+            # Создание заказа
+            order = self.create_order(user, request.data.get("payment_type"), p_data)
+
+            # Создание информации о доставке
             self.create_delivery_info(delivery_info, order.id)
-            print("delivery_info created")
-            print("order items create")
+
+            # Создание позиций заказа
             self.create_order_items(basket, order)
-            print("order items created")
-            if payment_type == "card":
+
+            # Проверка типа оплаты
+            if request.data.get("payment_type") == "card":
                 checkout_url = self.create_checkout_session(order.id)
                 order.checkout_url = checkout_url
                 order.save()
@@ -265,33 +284,72 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
-                {"error": "An unexpected error occurred: " + str(e)},
+                {"error": f"An unexpected error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    def create_post_department(self, post_department: dict) -> PostDepartment:
+        try:
+            return PostDepartment.objects.create(
+                city=post_department["city"],
+                state=post_department["state"],
+                address=post_department["address"]
+            )
+        except KeyError as e:
+            raise ValueError(f"Missing key in post_department: {e}")
+        except Exception as e:
+            raise ValueError(f"Error creating PostDepartment: {str(e)}")
+
+    def create_order(self, user, payment_type, p_data: PostDepartment) -> Order:
+        try:
+            return Order.objects.create(
+                user=user,
+                payment_type=payment_type,
+                post_department=p_data
+            )
+        except Exception as e:
+            raise ValueError(f"Error creating order: {str(e)}")
 
     def create_delivery_info(self, delivery_info: dict, order_id: int) -> DeliveryInfo:
         try:
             order = Order.objects.get(id=order_id)
-            print(f"Order found: {order}")
-            delivery_info_obj = DeliveryInfo.objects.create(
-                delivery_address=delivery_info["delivery_address"],
+            return DeliveryInfo.objects.create(
                 full_name=delivery_info["full_name"],
-                post_department=delivery_info["post_department"],
                 number=delivery_info["number"],
                 email=delivery_info["email"],
                 comments=delivery_info["comments"],
                 order=order,
             )
-            return delivery_info_obj
         except Order.DoesNotExist:
-            print(f"Order with id {order_id} does not exist.")
-            raise
+            raise ValueError(f"Order with id {order_id} does not exist.")
+        except KeyError as e:
+            raise ValueError(f"Missing key in delivery_info: {e}")
         except Exception as e:
-            print(f"An error occurred while creating DeliveryInfo: {str(e)}")
-            raise
+            raise ValueError(f"Error creating delivery info: {str(e)}")
 
-    def create_order(self, user, payment_type):
-        return Order.objects.create(user=user, payment_type=payment_type)
+    def create_order_items(self, basket: Basket, order: Order):
+        try:
+            for basket_item in basket.basket_items.all():
+                item = Item.objects.get(id=basket_item.item.id)
+                inventory = ItemInventory.objects.get(
+                    item=basket_item.item, size=basket_item.size, color=basket_item.color
+                )
+                if inventory.quantity < basket_item.quantity:
+                    raise ValueError(f"Not enough items in stock for {item.name}")
+
+                inventory.quantity -= basket_item.quantity
+                inventory.save()
+
+                OrderItem.objects.create(
+                    order=order,
+                    item=basket_item.item,
+                    price=item.price,
+                    size=basket_item.size,
+                    color=basket_item.color,
+                    quantity=basket_item.quantity,
+                )
+        except Exception as e:
+            raise ValueError(f"Error creating order items: {str(e)}")
 
     def create_checkout_session(self, order_id):
         try:
@@ -328,29 +386,13 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             raise ValueError(f"Failed to create checkout session: {str(e)}")
 
-    def create_order_items(self, basket: Basket, order: Order):
-        for basket_item in basket.basket_items.all():
-            item = Item.objects.get(id=basket_item.item.id)
-            inventory = ItemInventory.objects.get(
-                item=basket_item.item, size=basket_item.size, color=basket_item.color
-            )
-            if inventory.quantity < basket_item.quantity:
-                raise ValueError("Not enough items in stock")
-
-            inventory.quantity -= basket_item.quantity
-            inventory.save()
-
-            OrderItem.objects.create(
-                order=order,
-                item=basket_item.item,
-                price=item.price,
-                size=basket_item.size,
-                color=basket_item.color,
-                quantity=basket_item.quantity,
-            )
-
     def get_basket_for_user(self, user: User) -> Basket:
-        return Basket.objects.get(user=user)
+        try:
+            return Basket.objects.get(user=user)
+        except Basket.DoesNotExist:
+            raise ValueError(f"No basket found for user {user}")
+        except Exception as e:
+            raise ValueError(f"Error retrieving basket: {str(e)}")
 
     @staticmethod
     def delete_basket(user) -> None:
@@ -361,7 +403,6 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             print(f"No basket found for user {user}")
         except Exception as e:
             print(f"Unexpected error during basket deletion: {e}")
-
 
 @csrf_exempt
 def stripe_webhook(request):
