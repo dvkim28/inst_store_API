@@ -105,9 +105,9 @@ class PasswordResetConfirm(generics.GenericAPIView):
                 {"message": "Token is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
         try:
             password_reset = PasswordReset.objects.get(token=token)
+            user = get_user_model().objects.get(email=password_reset.email)
         except PasswordReset.DoesNotExist:
             return Response(
                 {"message": "Invalid or expired token."},
@@ -118,7 +118,11 @@ class PasswordResetConfirm(generics.GenericAPIView):
                 {"message": "Expired token."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
+        if user.is_email_verified == False:
+            return Response(
+                {"message": "User not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             new_password = serializer.validated_data["new_password"]
