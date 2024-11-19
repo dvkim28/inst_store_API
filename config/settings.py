@@ -213,6 +213,7 @@ TG_TOKEN = os.environ["TG_TOKEN"]
 LANGUAGES = [
     ("en", _("English")),
     ("uk", _("Ukrainian")),
+    ("ro", _("Romanian")),
 ]
 
 LOCALE_PATHS = [
