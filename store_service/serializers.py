@@ -22,8 +22,16 @@ from .models import (
 
 
 class AdditionalInfoSerializer(serializers.Serializer):
-    size = serializers.SlugRelatedField(slug_field="size", read_only=True, many=True)
-    color = serializers.SlugRelatedField(slug_field="color", read_only=True, many=True)
+    size = serializers.SlugRelatedField(
+        slug_field="size",
+        read_only=True,
+        many=True
+    )
+    color = serializers.SlugRelatedField(
+        slug_field="color",
+        read_only=True,
+        many=True
+    )
 
 
 class ItemDescriptionSerializer(serializers.ModelSerializer):
@@ -99,12 +107,16 @@ class ItemDetailSerializer(ItemSerializer):
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
-    item = serializers.SlugRelatedField(slug_field="name", queryset=Item.objects.all())
+    item = serializers.SlugRelatedField(
+        slug_field="name",
+        queryset=Item.objects.all())
     size = serializers.SlugRelatedField(
-        slug_field="size", queryset=ItemSize.objects.all()
+        slug_field="size",
+        queryset=ItemSize.objects.all()
     )
     color = serializers.SlugRelatedField(
-        slug_field="color", queryset=ItemColor.objects.all()
+        slug_field="color",
+        queryset=ItemColor.objects.all()
     )
     quantity = serializers.IntegerField()
 
@@ -113,18 +125,26 @@ class BasketItemSerializer(serializers.ModelSerializer):
         fields = ["id", "item", "size", "color", "quantity", "images"]
 
     def validate(self, data):
-        item = data.get("item", self.instance.item if self.instance else None)
-        size = data.get("size", self.instance.size if self.instance else None)
-        color = data.get("color", self.instance.color if self.instance else None)
+        item = data.get("item",
+                        self.instance.item if self.instance else None)
+        size = data.get("size",
+                        self.instance.size if self.instance else None)
+        color = data.get("color",
+                         self.instance.color if self.instance else None)
         quantity = data.get(
             "quantity", self.instance.quantity if self.instance else None
         )
 
         try:
-            inventory = ItemInventory.objects.get(item=item, size=size, color=color)
+            inventory = ItemInventory.objects.get(
+                item=item,
+                size=size,
+                color=color
+            )
         except ItemInventory.DoesNotExist:
             raise serializers.ValidationError(
-                "This combination of item, size, and color does not exist in inventory."
+                "This combination of item, size, and color "
+                "does not exist in inventory."
             )
 
         if inventory.quantity < quantity:
@@ -142,7 +162,10 @@ class BasketItemForBasketSerializer(serializers.ModelSerializer):
         slug_field="color", queryset=ItemColor.objects.all()
     )
     quantity = serializers.IntegerField()
-    images = ImageItemSerializer(many=True, read_only=True, source="item.images")
+    images = ImageItemSerializer(
+        many=True,
+        read_only=True,
+        source="item.images")
 
     class Meta:
         model = BasketItem

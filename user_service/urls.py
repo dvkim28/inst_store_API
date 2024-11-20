@@ -1,6 +1,7 @@
-from django.contrib.auth.views import LoginView
-from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.urls import path
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView)
 
 from user_service.views import (
     ManageUserView,
@@ -16,7 +17,9 @@ urlpatterns = [
     path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("verifying/", VerifyEmailView.as_view(), name="verifying_email"),
-    path("reset_password/", ResetPasswordView.as_view(), name="reset_password"),
+    path("reset_password/",
+         ResetPasswordView.as_view(),
+         name="reset_password"),
     path(
         "password_reset_confirm/",
         PasswordResetConfirm.as_view(),

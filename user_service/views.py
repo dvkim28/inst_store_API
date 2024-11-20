@@ -118,7 +118,7 @@ class PasswordResetConfirm(generics.GenericAPIView):
                 {"message": "Expired token."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if user.is_email_verified == False:
+        if user.is_email_verified is False:
             return Response(
                 {"message": "User not found."},
                 status=status.HTTP_404_NOT_FOUND,
@@ -139,7 +139,11 @@ class PasswordResetConfirm(generics.GenericAPIView):
             user.save()
             password_reset.delete()
             return Response(
-                {"message": "Password reset successful."}, status=status.HTTP_200_OK
+                {"message": "Password reset successful."},
+                status=status.HTTP_200_OK
             )
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )

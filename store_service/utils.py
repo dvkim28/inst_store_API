@@ -18,7 +18,9 @@ def create_checkout_session(order_id: int) -> str:
 
     stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
     if not stripe.api_key:
-        raise ValueError("Stripe secret key " "is not set in environment variables")
+        raise ValueError(
+            "Stripe secret key " "is not set in environment variables"
+        )
 
     try:
         order = Order.objects.get(id=order_id)
@@ -116,8 +118,7 @@ def translate_and_update_description(item_id: int) -> None:
         logger.error(f"Ошибка при переводе ids и обновлении модели: {e}")
 
 
-def send_email_order_created(order: Order, user:User ) -> None:
-    print(f"Started email")
+def send_email_order_created(order: Order, user: User) -> None:
     message = (
         f"Hello!\n\n"
         f"You just recieved a new order, order ID is {order}\n "
@@ -132,7 +133,6 @@ def send_email_order_created(order: Order, user:User ) -> None:
         ["d.villarionovich@gmail.com",],
         fail_silently=False,
     )
-    print(f"Finished email")
 
 
 def send_email_to_user_about_order_success(order, user) -> None:
@@ -148,7 +148,7 @@ def send_email_to_user_about_order_success(order, user) -> None:
     plain_message = strip_tags(convert_to_html_content)
 
     send_mail(
-        subject=f"We recieved your order",
+        subject="We recieved your order",
         message=plain_message,
         from_email="d.villarionovich@gmail.com",
         recipient_list=[user.email,],

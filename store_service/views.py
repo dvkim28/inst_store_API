@@ -31,7 +31,9 @@ from .serializers import (
     ItemSerializer,
     OrderSerializer,
 )
-from .utils import send_email_order_created, send_email_to_user_about_order_success
+from .utils import (
+    send_email_order_created,
+    send_email_to_user_about_order_success)
 
 
 @extend_schema_view(
@@ -135,7 +137,11 @@ class BasketItemViewSet(viewsets.ModelViewSet):
             item = Item.objects.get(name=item)
             size = ItemSize.objects.get(size=size)
             color = ItemColor.objects.get(color=color)
-            inventory = ItemInventory.objects.get(item=item, size=size, color=color)
+            inventory = ItemInventory.objects.get(
+                item=item,
+                size=size,
+                color=color
+            )
 
             if inventory.quantity < int(quantity):
                 return Response(
@@ -229,15 +235,23 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
         try:
             basket = self.get_basket_for_user(user)
-        except Exception as e:
-            return Response({"error": "Unable to retrieve basket"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({
+                "error": "Unable to retrieve basket"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         delivery_info = {
-            "full_name": request.data.get("delivery_info.full_name", ""),
-            "number": request.data.get("delivery_info.number", ""),
-            "email": request.data.get("delivery_info.email", ""),
-            "comments": request.data.get("delivery_info.comments", ""),
-            "delivery_type": request.data.get("delivery_info.delivery_type", ""),
+            "full_name": request.data.
+            get("delivery_info.full_name", ""),
+            "number": request.data.
+            get("delivery_info.number", ""),
+            "email": request.data.
+            get("delivery_info.email", ""),
+            "comments": request.data.
+            get("delivery_info.comments", ""),
+            "delivery_type": request.data.
+            get("delivery_info.delivery_type", ""),
         }
 
         post_department = {
@@ -247,15 +261,27 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         }
 
         if not delivery_info["full_name"] or not delivery_info["number"]:
-            return Response({"error": "Delivery information is incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Delivery information is incomplete"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if not post_department["city"] or not post_department["state"] or not post_department["address"]:
-            return Response({"error": "Post department data is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if (not post_department["city"]
+                or not post_department["state"]
+                or not post_department["address"]):
+            return Response({
+                "error": "Post department data is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             p_data = self.create_post_department(post_department)
 
-            order = self.create_order(user, request.data.get("payment_type"), p_data)
+            order = self.create_order(
+                user,
+                request.data.get("payment_type"),
+                p_data
+            )
 
             self.create_delivery_info(delivery_info, order.id)
 
@@ -289,10 +315,15 @@ class OrderModelViewSet(viewsets.ModelViewSet):
                 self.delete_basket(user)
 
                 serializer = self.get_serializer(order)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
 
         except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+            )
         except Exception as e:
             return Response(
                 {"error": f"An unexpected error occurred: {str(e)}"},
@@ -311,7 +342,12 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             raise ValueError(f"Error creating PostDepartment: {str(e)}")
 
-    def create_order(self, user, payment_type, p_data: PostDepartment) -> Order:
+    def create_order(
+            self,
+            user,
+            payment_type,
+            p_data: PostDepartment
+    ) -> Order:
         try:
             return Order.objects.create(
                 user=user,
@@ -321,7 +357,11 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             raise ValueError(f"Error creating order: {str(e)}")
 
-    def create_delivery_info(self, delivery_info: dict, order_id: int) -> DeliveryInfo:
+    def create_delivery_info(
+            self,
+            delivery_info: dict,
+            order_id: int
+    ) -> DeliveryInfo:
         try:
             order = Order.objects.get(id=order_id)
             return DeliveryInfo.objects.create(
@@ -343,10 +383,14 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             for basket_item in basket.basket_items.all():
                 item = Item.objects.get(id=basket_item.item.id)
                 inventory = ItemInventory.objects.get(
-                    item=basket_item.item, size=basket_item.size, color=basket_item.color
+                    item=basket_item.item,
+                    size=basket_item.size,
+                    color=basket_item.color
                 )
                 if inventory.quantity < basket_item.quantity:
-                    raise ValueError(f"Not enough items in stock for {item.name}")
+                    raise ValueError(
+                        f"Not enough items in stock for {item.name}"
+                    )
 
                 inventory.quantity -= basket_item.quantity
                 inventory.save()
@@ -370,7 +414,9 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Order.DoesNotExist:
             raise ValueError(f"Order with id {order_id} does not exist.")
         except Exception as e:
-            raise ValueError(f"Unexpected error while retrieving order: {str(e)}")
+            raise ValueError(
+                f"Unexpected error while retrieving order: {str(e)}"
+            )
 
         line_items = []
         try:
@@ -396,7 +442,10 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             line_items.append({
                 "price_data": {
                     "currency": "usd",
-                    "product_data": {"name": "Delivery fee", "description": "Delivery fee"},
+                    "product_data": {
+                        "name": "Delivery fee",
+                        "description": "Delivery fee"
+                    },
                     "unit_amount": 200,
                 },
                 "quantity": 1,
@@ -438,6 +487,7 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Unexpected error during basket deletion: {e}")
 
+
 @csrf_exempt
 def stripe_webhook(request):
     stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -447,7 +497,11 @@ def stripe_webhook(request):
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE", "")
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        event = stripe.Webhook.construct_event(
+            payload,
+            sig_header,
+            endpoint_secret
+        )
     except ValueError:
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError:
@@ -470,5 +524,5 @@ def mark_order_complete(event: dict) -> None:
     send_email_to_user_about_order_success(order, user)
     try:
         order.save()
-    except Exception as e:
+    except Exception:
         OrderModelViewSet.delete_basket(user)

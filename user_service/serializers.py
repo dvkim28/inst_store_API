@@ -59,10 +59,15 @@ class ManageUserSerializer(serializers.ModelSerializer):
         return OrderSerializer(obj.orders.filter(is_paid=True), many=True).data
 
     def update(self, instance, validated_data):
-        instance.first_name = validated_data.get("first_name", instance.first_name)
-        instance.last_name = validated_data.get("last_name", instance.last_name)
+        instance.first_name = validated_data.get(
+            "first_name",
+            instance.first_name)
+        instance.last_name = validated_data.get(
+            "last_name",
+            instance.last_name)
         instance.phone_number = validated_data.get(
-            "phone_number", instance.phone_number
+            "phone_number",
+            instance.phone_number
         )
         instance.save()
         return instance
@@ -85,9 +90,10 @@ class ResetPasswordSerializer(serializers.Serializer):
     def validate_new_password(self, value):
         try:
             validate_password(value)
-        except serializers.ValidationError as e:
+        except serializers.ValidationError:
             raise serializers.ValidationError(
-                "Password must be at least 8 characters long with at least one capital letter and symbol."
+                "Password must be at least 8 characters long"
+                " with at least one capital letter and symbol."
             )
         return value
 
@@ -96,6 +102,8 @@ class ResetPasswordSerializer(serializers.Serializer):
         confirm_password = data.get("confirm_password")
 
         if new_password != confirm_password:
-            raise serializers.ValidationError("The two password fields must match.")
+            raise serializers.ValidationError(
+                "The two password fields must match."
+            )
 
         return data
