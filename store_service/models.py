@@ -5,11 +5,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import DecimalField, OneToOneField, Sum
 
-from .utils import (
-    translate_and_update_category,
-    translate_and_update_description,
-    translate_and_update_item,
-)
 
 
 class Category(models.Model):
@@ -18,20 +13,6 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
-
-    # def save(self, *args, **kwargs):
-    #     is_new = self.pk is None
-    #     if not is_new:
-    #         old_category = Category.objects.get(pk=self.pk)
-    #         old_name = old_category.name
-    #         old_description = old_category.description
-    #     else:
-    #         old_name = None
-    #
-    #     super().save(*args, **kwargs)
-    #
-    #     if is_new or old_name != self.name or old_description != self.description:
-    #         translate_and_update_category.delay(self.pk)
 
 
 class ImageItem(models.Model):
@@ -53,32 +34,6 @@ class Item(models.Model):
     sale = models.BooleanField(default=False)
     date_added = models.DateField(auto_now_add=True)
 
-    # def save(self, *args, **kwargs):
-    #     is_new = self.pk is None
-    #
-    #     if not is_new:
-    #         try:
-    #             old_item = Item.objects.get(pk=self.pk)
-    #             old_name = old_item.name
-    #             old_fabric = old_item.fabric
-    #             old_descriptions = list(old_item.description.all())
-    #         except ObjectDoesNotExist:
-    #             old_name = None
-    #             old_fabric = None
-    #             old_descriptions = []
-    #     else:
-    #         old_name = None
-    #         old_fabric = None
-    #         old_descriptions = []
-    #
-    #     super().save(*args, **kwargs)
-    #     if (
-    #         is_new
-    #         or old_name != self.name
-    #         or old_fabric != self.fabric
-    #         or old_descriptions != list(self.description.all())
-    #     ):
-    #         translate_and_update_item(self.pk)
 
     def __str__(self):
         return self.name
@@ -130,25 +85,6 @@ class ItemDescription(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="description")
-
-    # def save(self, *args, **kwargs):
-    #     is_new = self.pk is None
-    #     if not is_new:
-    #         old_desc = ItemDescription.objects.get(pk=self.pk)
-    #         old_desc_title = old_desc.title
-    #         old_desc_description = old_desc.description
-    #     else:
-    #         old_desc_title = None
-    #         old_desc_description = None
-    #
-    #     super().save(*args, **kwargs)
-    #
-    #     if (
-    #         is_new
-    #         or old_desc_title != self.title
-    #         or old_desc_description != self.description
-    #     ):
-    #         translate_and_update_description.delay(self.pk)
 
 
 class Basket(models.Model):

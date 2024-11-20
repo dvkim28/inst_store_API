@@ -1,12 +1,14 @@
-# tasks.py
 import os
 
 import stripe
 from celery import shared_task
 from deep_translator import GoogleTranslator
 from django.apps import apps
+from django.core.mail import send_mail
 
 from config import settings
+from store_service.models import Order
+from user_service.models import User
 
 
 def create_checkout_session(order_id: int) -> str:
@@ -110,3 +112,22 @@ def translate_and_update_description(item_id: int) -> None:
 
         logger = logging.getLogger(__name__)
         logger.error(f"Ошибка при переводе ids и обновлении модели: {e}")
+
+
+def send_email_order_created(order: Order, user:User ) -> None:
+    print(f"Started email")
+    message = (
+        f"Hello!\n\n"
+        f"You just recieved a new order, order ID is {order}\n "
+        f"from {user.email}"
+    )
+    print(f"message:{message}")
+
+    send_mail(
+        f"New order from {user.email}",
+        message,
+        "d.villarionovich@gmail.com",
+        ["d.villarionovich@gmail.com",],
+        fail_silently=False,
+    )
+    print(f"Finished email")

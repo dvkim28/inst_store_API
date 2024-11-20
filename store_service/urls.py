@@ -7,7 +7,6 @@ from .views import (
     CategoryModelViewSet,
     ItemModelViewSet,
     OrderModelViewSet,
-    stripe_webhook,
 )
 
 router = routers.DefaultRouter()
@@ -19,7 +18,6 @@ router.register(r"basket-items", BasketItemViewSet, basename="basketitem")
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("webhook/", stripe_webhook, name="stripe-webhook"),
 ]
 
 app_name = "store_service"

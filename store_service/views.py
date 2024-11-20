@@ -31,6 +31,7 @@ from .serializers import (
     ItemSerializer,
     OrderSerializer,
 )
+from .utils import send_email_order_created
 
 
 @extend_schema_view(
@@ -464,12 +465,9 @@ def mark_order_complete(event: dict) -> None:
     order_id = event["metadata"]["order_id"]
     order = Order.objects.get(id=order_id)
     user = order.user
-    print(f"Order before marking as paid: {order.is_paid}")
     order.is_paid = True
+    send_email_order_created(order, user)
     try:
-        print(f"Attempting to save order {order.id} with is_paid=True")
         order.save()
-        print(f"Order {order.id} marked as paid: {order.is_paid}")
     except Exception as e:
-        print(f"Error saving order: {e}")
-    OrderModelViewSet.delete_basket(user)
+        OrderModelViewSet.delete_basket(user)
