@@ -5,6 +5,8 @@ from celery import shared_task
 from deep_translator import GoogleTranslator
 from django.apps import apps
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 from config import settings
 from store_service.models import Order
@@ -131,3 +133,29 @@ def send_email_order_created(order: Order, user:User ) -> None:
         fail_silently=False,
     )
     print(f"Finished email")
+
+
+def send_email_to_user_about_order_success(order, user) -> None:
+    print("message starting")
+    template_name = "mail_template/successOrder.html"
+    total = get_total_price(order)
+    order_items = order.items.all()
+
+    convert_to_html_content = render_to_string(template_name, {
+        'order_items': order_items,
+        'total': total,
+        'user': user})
+    plain_message = strip_tags(convert_to_html_content)
+
+    send_mail(
+        subject=f"We recieved your order",
+        message=plain_message,
+        from_email="d.villarionovich@gmail.com",
+        recipient_list=[user.email,],
+        html_message=convert_to_html_content,
+        fail_silently=True
+    )
+
+
+def get_total_price(order):
+    return sum(item.price * item.quantity for item in order.items.all())

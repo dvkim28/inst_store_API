@@ -1,0 +1,105 @@
+<html>
+<head>
+    <style>
+        body {
+            font-family: Inter, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header img {
+            max-width: 150px;
+        }
+        .success-icon {
+            margin: 20px auto;
+            width: 50px;
+            height: 50px;
+            background-color: #28a745;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 30px;
+        }
+        .order-details {
+            margin-top: 20px;
+        }
+        .order-item {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+        }
+        .contact-info {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+          <img src='https://i.postimg.cc/CxQHJ2m2/Frame-465.png' border='0' alt='main-logo'/>
+        </div>
+        <div class="success-icon">
+            ✓
+        </div>
+        <h2 style="text-align:center;">Ваше замовлення успішно оплачено!</h2>
+        <p>Дякуємо за покупку! Ось деталі вашого замовлення:</p>
+        
+        <div class="order-details">
+            <h3>Деталі замовлення:</h3>
+          {% for item in order_items %}
+            <div class="order-item">
+                <img src="{{ item.image.url}}" alt="{{ item.name }}" style="max-width: 100px; float: left; margin-right: 10px;">
+                <p><strong>Товар:</strong> {{ item.name }}</p>
+                <p><strong>Колір:</strong> {{ item.color }}</p>
+                <p><strong>Розмір:</strong>{{ item.size }}</p>
+                <p><strong>Кількість:</strong>{{item.quantity}}</p>
+                <p><strong>Ціна:</strong>{{item.price}} грн</p>
+            </div>
+          {% endfor %}
+
+            <p><strong>Загальна сума:</strong> {{ total }} грн</p>
+        </div>
+
+        <div class="order-details">
+            <h3>Ваші дані:</h3>
+            <p><strong>Ім'я:</strong> {{Order.delivery_info.full_name}}</p>
+            <p><strong>Телефон:</strong> {{Order.delivery_info.number}}</p>
+            <p><strong>Email:</strong> {{Order.delivery_info.email}}</p>
+            <p><strong>Метод доставки:</strong> {{Order.delivery_info.delivery_type}}</p>
+            <p><strong>Адреса доставки:</strong> {{Order.delivery_info.address}}</p>
+            <p><strong>Коментарі:</strong> {{Order.delivery_info.comments}}</p>
+        </div>
+
+        <div class="footer">
+            <p>Якщо у вас є запитання, звертайтесь до нашої служби підтримки:</p>
+            <div class="contact-info">
+                <p><strong>Телефон:</strong> +38 (050) 123-45-67</p>
+                <p><strong>Email:</strong> support@zheilyk.com</p>
+                <p><strong>Адреса:</strong> м. Чернівці, вул. Ентузіастів, 3А</p>
+            </div>
+            <p>Дякуємо за те, що обрали нашу компанію!</p>
+        </div>
+    </div>
+</body>
+</html>

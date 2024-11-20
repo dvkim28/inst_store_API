@@ -31,7 +31,7 @@ from .serializers import (
     ItemSerializer,
     OrderSerializer,
 )
-from .utils import send_email_order_created
+from .utils import send_email_order_created, send_email_to_user_about_order_success
 
 
 @extend_schema_view(
@@ -467,6 +467,7 @@ def mark_order_complete(event: dict) -> None:
     user = order.user
     order.is_paid = True
     send_email_order_created(order, user)
+    send_email_to_user_about_order_success(order, user)
     try:
         order.save()
     except Exception as e:
