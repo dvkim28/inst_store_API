@@ -223,10 +223,14 @@ class OrderModelViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        user = self.request.user
-        basket = self.get_basket_for_user(user)
 
-        # Извлечение delivery_info
+        user = self.request.user
+
+        try:
+            basket = self.get_basket_for_user(user)
+        except Exception as e:
+            return Response({"error": "Unable to retrieve basket"}, status=status.HTTP_400_BAD_REQUEST)
+
         delivery_info = {
             "full_name": request.data.get("delivery_info.full_name", ""),
             "number": request.data.get("delivery_info.number", ""),
@@ -235,14 +239,12 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             "delivery_type": request.data.get("delivery_info.delivery_type", ""),
         }
 
-        # Извлечение post_department
         post_department = {
             "city": request.data.get("post_department.city", ""),
             "state": request.data.get("post_department.state", ""),
             "address": request.data.get("post_department.address", ""),
         }
 
-        # Проверка обязательных полей
         if not delivery_info["full_name"] or not delivery_info["number"]:
             return Response({"error": "Delivery information is incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -250,21 +252,18 @@ class OrderModelViewSet(viewsets.ModelViewSet):
             return Response({"error": "Post department data is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Создание PostDepartment
             p_data = self.create_post_department(post_department)
 
-            # Создание заказа
             order = self.create_order(user, request.data.get("payment_type"), p_data)
 
-            # Создание информации о доставке
             self.create_delivery_info(delivery_info, order.id)
 
-            # Создание позиций заказа
             self.create_order_items(basket, order)
 
-            # Проверка типа оплаты
-            if request.data.get("payment_type") == "card":
-                checkout_url = self.create_checkout_session(order.id)
+            payment_type = request.data.get("payment_type")
+
+            if payment_type == "card":
+                checkout_url = self.prepare_checkout_session(order.id)
                 order.checkout_url = checkout_url
                 order.save()
 
@@ -272,6 +271,17 @@ class OrderModelViewSet(viewsets.ModelViewSet):
                 response_data = serializer.data
                 response_data["checkout_url"] = checkout_url
                 return Response(response_data, status=status.HTTP_201_CREATED)
+
+            elif payment_type == "cash_on_delivery":
+                checkout_url = self.prepare_checkout_session(order.id)
+                order.checkout_url = checkout_url
+                order.save()
+
+                serializer = self.get_serializer(order)
+                response_data = serializer.data
+                response_data["checkout_url"] = checkout_url
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
             else:
                 order.is_paid = False
                 order.save()
@@ -351,27 +361,50 @@ class OrderModelViewSet(viewsets.ModelViewSet):
         except Exception as e:
             raise ValueError(f"Error creating order items: {str(e)}")
 
-    def create_checkout_session(self, order_id):
+    @transaction.atomic
+    def prepare_checkout_session(self, order_id):
+
+        try:
+            order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist:
+            raise ValueError(f"Order with id {order_id} does not exist.")
+        except Exception as e:
+            raise ValueError(f"Unexpected error while retrieving order: {str(e)}")
+
+        line_items = []
         try:
             stripe.api_key = settings.STRIPE_SECRET_KEY
-            order = Order.objects.get(id=order_id)
-            items = order.items.all()
+        except Exception as e:
+            raise ValueError(f"Error setting up Stripe API key: {str(e)}")
 
-            line_items = []
-            for item in items:
-                line_items.append(
-                    {
+        if order.payment_type == "card":
+            try:
+                items = order.items.all()
+                for item in items:
+                    line_items.append({
                         "price_data": {
                             "currency": "usd",
-                            "product_data": {
-                                "name": item.item.name,
-                            },
+                            "product_data": {"name": item.item.name},
                             "unit_amount": int(item.price * 100),
                         },
                         "quantity": item.quantity,
-                    }
-                )
+                    })
+            except Exception as e:
+                raise ValueError(f"Error while preparing line items: {str(e)}")
+        else:
+            line_items.append({
+                "price_data": {
+                    "currency": "usd",
+                    "product_data": {"name": "Delivery fee", "description": "Delivery fee"},
+                    "unit_amount": 200,
+                },
+                "quantity": 1,
 
+            })
+        return self.create_checkout_session(line_items, order_id)
+
+    def create_checkout_session(self, line_items: list, order_id):
+        try:
             checkout_session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
                 line_items=line_items,
