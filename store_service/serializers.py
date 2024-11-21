@@ -122,7 +122,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BasketItem
-        fields = ["id", "item", "size", "color", "quantity", "images"]
+        fields = ["id", "item", "size", "color", "quantity"]
 
     def validate(self, data):
         item = data.get("item",
@@ -148,7 +148,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
             )
 
         if inventory.quantity < quantity:
-            raise serializers.ValidationError("Not enough items in stock 129")
+            raise serializers.ValidationError("Not enough items in stock")
 
         return data
 
