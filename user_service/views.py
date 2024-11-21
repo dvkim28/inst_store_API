@@ -79,7 +79,7 @@ class ResetPasswordView(generics.GenericAPIView):
         if serializer.is_valid():
             email = serializer.validated_data.get("email")
             try:
-                user = get_user_model().objects.get(email=email)
+                get_user_model().objects.get(email=email)
                 send_recovery_email(email)
                 return Response(
                     {"message": "Password recovery email sent successfully."},

@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_email_verified",
         ]
         extra_kwargs = {
-            "password": {"min_length": 5, "max_length":15, "write_only": True},
+            "password": {"min_length": 5, "max_length": 15, "write_only": True},
         }
         read_only_fields = ["id", "is_staff", "is_email_verified"]
 
