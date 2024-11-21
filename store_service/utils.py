@@ -136,7 +136,6 @@ def send_email_order_created(order: Order, user: User) -> None:
 
 
 def send_email_to_user_about_order_success(order, user) -> None:
-    print("message starting")
     template_name = "mail_template/successOrder.html"
     total = get_total_price(order)
     order_items = order.items.all()

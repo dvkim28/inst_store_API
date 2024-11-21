@@ -1,5 +1,8 @@
 import os
 import urllib.parse
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
 
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
@@ -36,20 +39,21 @@ def send_recovery_email(mail: str) -> None:
     pass_reset = PasswordReset.objects.create(email=mail, token=token)
     pass_reset.save()
     BASE_URL = os.environ.get("BASE_URL")
+    template_name = "mail_template/mailChangePass.html"
+    convert_to_html_content = render_to_string(template_name)
+    plain_message = strip_tags(convert_to_html_content)
+
+
+
 
     verification_link = f"{BASE_URL}#/confirm/{token}"
-    message = (
-        f"Hello!\n\n"
-        f"We received a request to reset the password for your account. "
-        f"Please click the following link to set a new password:\n\n"
-        f"{verification_link}\n\n"
-        f"If you did not request a password reset, please ignore this message."
-    )
+
 
     send_mail(
         "Password recovery",
-        message,
-        "d.villarionovich@gmail.com",
-        [mail],
+        message=plain_message,
+        from_email="d.villarionovich@gmail.com",
+        recipient_list= [mail,],
+        html_message=convert_to_html_content,
         fail_silently=False,
     )
