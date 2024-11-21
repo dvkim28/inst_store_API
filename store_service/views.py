@@ -245,23 +245,21 @@ class OrderModelViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        data = request.data.get("delivery_info")
         delivery_info = {
-            "full_name": request.data.
-            get("delivery_info.full_name", ""),
-            "number": request.data.
-            get("delivery_info.number", ""),
-            "email": request.data.
-            get("delivery_info.email", ""),
-            "comments": request.data.
-            get("delivery_info.comments", ""),
-            "delivery_type": request.data.
-            get("delivery_info.delivery_type", ""),
+            "full_name": data["full_name"],
+            "number": data["number"],
+            "email": data["email"],
+            "comments": data["comments"],
+            "delivery_type": data["delivery_type"],
         }
 
+        post_data = request.data.get("post_department")
+        print(post_data)
         post_department = {
-            "city": request.data.get("post_department.city", ""),
-            "state": request.data.get("post_department.state", ""),
-            "address": request.data.get("post_department.address", ""),
+            "city": post_data["city"],
+            "state": post_data["state"],
+            "address": post_data["address"],
         }
 
         if not delivery_info["full_name"] or not delivery_info["number"]:
