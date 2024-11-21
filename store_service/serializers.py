@@ -227,8 +227,7 @@ class DeliveryInfoSerializer(serializers.ModelSerializer):
 class DeliveryInfoDetailSerializer(DeliveryInfoSerializer):
     class Meta:
         model = DeliveryInfo
-        fields = "__all__"
-
+        fields = ("full_name", "number", "email", "comments", "delivery_type")
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
