@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from user_service.models import PasswordReset
 from user_service.serializers import (
@@ -77,19 +78,19 @@ class ResetPasswordView(generics.GenericAPIView):
         serializer = ResetPasswordRequestSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data.get("email")
-            user = get_user_model().objects.get(email=email)
-            print(user.id)
-            if user:
+            try:
+                user = get_user_model().objects.get(email=email)
                 send_recovery_email(email)
                 return Response(
                     {"message": "Password recovery email sent successfully."},
                     status=status.HTTP_200_OK,
                 )
-            else:
+            except get_user_model().DoesNotExist:
                 return Response(
-                    {"message": "There is no such user in the system."},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"message": "This email is not registered/existing"},
+                    status=status.HTTP_404_NOT_FOUND,
                 )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordResetConfirm(generics.GenericAPIView):

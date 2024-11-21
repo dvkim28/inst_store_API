@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+
 
 from user_service.utils import send_verification_email
 
@@ -16,21 +18,32 @@ class UserSerializer(serializers.ModelSerializer):
             "is_email_verified",
         ]
         extra_kwargs = {
-            "password": {"min_length": 5, "write_only": True},
+            "password": {"min_length": 5, "max_length":15, "write_only": True},
         }
         read_only_fields = ["id", "is_staff", "is_email_verified"]
 
+    def validate_password(self, value):
+        try:
+            validate_password(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
+
     def create(self, validated_data):
+        self.validate_password(validated_data.get("password"))
         user = get_user_model().objects.create_user(**validated_data)
         send_verification_email(user)
         return user
 
     def update(self, instance, validated_data):
-        user = super().update(instance, validated_data)
         password = validated_data.pop("password", None)
+
         if password:
-            user.set_password(password)
-            user.save()
+            self.validate_password(password)
+            instance.set_password(password)
+
+        user = super().update(instance, validated_data)
+        instance.save()
         return user
 
 
