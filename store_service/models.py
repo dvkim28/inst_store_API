@@ -159,9 +159,20 @@ class PaymentType(models.TextChoices):
 
 
 class PostDepartment(models.Model):
-    city = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)
-    address = models.TextField()
+    city = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    state = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    address = models.TextField(
+        blank=True,
+        null=True
+    )
 
 
 class Order(models.Model):
