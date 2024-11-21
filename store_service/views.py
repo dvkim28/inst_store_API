@@ -132,16 +132,20 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         color = request.data.get("color")
         quantity = request.data.get("quantity", 1)
         item_main = Item.objects.get(name=item)
-        print(item_main.id)
+        print(";get; done")
         try:
             item = Item.objects.get(name=item)
+            print("item found")
             size = ItemSize.objects.get(size=size)
+            print("size found")
             color = ItemColor.objects.get(color=color)
+            print("color found")
             inventory = ItemInventory.objects.get(
                 item=item,
                 size=size,
                 color=color
             )
+            print("inventory found")
 
             if inventory.quantity < int(quantity):
                 return Response(
