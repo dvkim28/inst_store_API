@@ -229,6 +229,7 @@ class DeliveryInfoDetailSerializer(DeliveryInfoSerializer):
         model = DeliveryInfo
         fields = ("full_name", "number", "email", "comments", "delivery_type")
 
+
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     payment_type = serializers.ChoiceField(choices=PaymentType.choices)

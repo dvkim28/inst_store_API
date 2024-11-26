@@ -26,7 +26,8 @@ urlpatterns = [
         name="redoc",
     ),
     path("i18n/", include("django.conf.urls.i18n")),
-]
+    path('accounts/', include('allauth.urls')),
+    path('accounts/', include('allauth.socialaccount.urls')),]
 
 urlpatterns += i18n_patterns(
     path("api/v1/users/", include("user_service.urls")),
