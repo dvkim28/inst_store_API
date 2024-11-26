@@ -9,15 +9,18 @@ black==24.4.2
 Brotli==1.1.0
 celery==5.4.0
 certifi==2024.7.4
+cffi==1.17.1
 chardet==3.0.4
 charset-normalizer==3.3.2
 click==8.1.7
 click-didyoumean==0.3.1
 click-plugins==1.1.1
 click-repl==0.3.0
+cryptography==43.0.3
 deep-translator==1.11.4
 dj-database-url==2.2.0
-Django==4.2.14
+Django==4.2.16
+django-allauth==65.2.0
 django-cors-headers==4.4.0
 django-modeltranslation==0.19.7
 djangorestframework==3.15.2
@@ -52,6 +55,7 @@ platformdirs==4.2.2
 prompt_toolkit==3.0.47
 psycopg2-binary==2.9.9
 pycodestyle==2.12.0
+pycparser==2.22
 pyflakes==3.2.0
 PyJWT==2.8.0
 PySocks==1.7.1
