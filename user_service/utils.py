@@ -10,7 +10,7 @@ from django.utils.crypto import get_random_string
 from user_service.models import PasswordReset
 
 
-def send_verification_email(user):
+def send_verification_email(user) -> None:
     token = get_random_string(length=32)
     user.verification_token = token
     user.save()
@@ -18,20 +18,24 @@ def send_verification_email(user):
     verification_link = (
         f"http://127.0.0.1:5173/#/activate/?token={urllib.parse.quote(token)}"
     )
+    template_name = "mail_template/mailAuth.html"
+    convert_to_html_content = render_to_string(template_name, {
+        "verification_link": verification_link,
+    })
+    plain_message = strip_tags(convert_to_html_content)
 
-    message = (
-        f"Привет, {user.username}!"
-        f"Пожалуйста, перейдите по ссылке"
-        f" для подтверждения вашей почты: {verification_link}"
-    )
+
+
 
     send_mail(
-        "Подтверждение почты",
-        message,
-        "d.villarionovich@gmail.com",
-        [user.email],
+        "Password recovery",
+        message=plain_message,
+        from_email="d.villarionovich@gmail.com",
+        recipient_list= [user.email,],
+        html_message=convert_to_html_content,
         fail_silently=False,
     )
+
 
 
 def send_recovery_email(mail: str) -> None:
