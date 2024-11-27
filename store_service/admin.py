@@ -36,15 +36,6 @@ class ItemAdmin(TranslationAdmin):
     inlines = [ItemDescriptionInline, ImageItemInline]  #
 
 
-@admin.register(ImageItem)
-class ImageItemAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "image",
-    )
-    search_fields = ("id",)
-
-
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 1
